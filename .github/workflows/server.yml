@@ -3,7 +3,7 @@ name: ci server
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
 
 jobs:
   docker:
