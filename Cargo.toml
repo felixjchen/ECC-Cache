@@ -3,12 +3,12 @@ name = "ECC-Cache"
 version = "0.1.0"
 edition = "2018"
 
-[[bin]] # Bin to run the HelloWorld gRPC server
-name = "helloworld-server"
+[[bin]]
+name = "distributed-cache-server"
 path = "src/server.rs"
 
-[[bin]] # Bin to run the HelloWorld gRPC client
-name = "helloworld-client"
+[[bin]] 
+name = "distributed-cache-client"
 path = "src/client.rs"
 
 

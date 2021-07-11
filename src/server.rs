@@ -32,7 +32,7 @@ impl Greeter for MyGreeter {
 }
 
 async fn serve() -> Result<(), Box<dyn std::error::Error>> {
-  let addr = "[::1]:50051".parse()?;
+  let addr = "0.0.0.0:50051".parse()?;
   let greeter = MyGreeter::default();
 
   Server::builder()
@@ -42,8 +42,8 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
 
   Ok(())
 }
-async fn q() -> Result<(), Box<dyn std::error::Error>> {
-  let mut client = GreeterClient::connect("http://[::1]:50051").await?;
+async fn query() -> Result<(), Box<dyn std::error::Error>> {
+  let mut client = GreeterClient::connect("http://0.0.0.0:50051").await?;
 
   let request = tonic::Request::new(HelloRequest {
     name: "Tonic".into(),
@@ -59,7 +59,7 @@ async fn q() -> Result<(), Box<dyn std::error::Error>> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let f1 = serve();
-  let f2 = q();
+  let f2 = query();
 
   join!(f1, f2);
 
