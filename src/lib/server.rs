@@ -56,8 +56,7 @@ async fn query() -> Result<(), Box<dyn std::error::Error>> {
   Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let f1 = serve();
   let f2 = query();
 
