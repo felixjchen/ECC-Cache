@@ -107,18 +107,25 @@ impl MemStore {
   }
 
   /// Get a handle to the log for testing purposes.
-  pub async fn get_log(&self) -> RwLockWriteGuard<'_, BTreeMap<u64, Entry<ClientRequest>>> {
-    self.log.write().await
-  }
+  // pub async fn get_log(&self) -> RwLockWriteGuard<'_, BTreeMap<u64, Entry<ClientRequest>>> {
+  //   self.log.write().await
+  // }
 
-  /// Get a handle to the state machine for testing purposes.
-  pub async fn get_state_machine(&self) -> RwLockWriteGuard<'_, MemStoreStateMachine> {
-    self.sm.write().await
-  }
+  // /// Get a handle to the state machine for testing purposes.
+  // pub async fn get_state_machine(&self) -> RwLockWriteGuard<'_, MemStoreStateMachine> {
+  //   self.sm.write().await
+  // }
 
-  /// Get a handle to the current hard state for testing purposes.
-  pub async fn read_hard_state(&self) -> RwLockReadGuard<'_, Option<HardState>> {
-    self.hs.read().await
+  // /// Get a handle to the current hard state for testing purposes.
+  // pub async fn read_hard_state(&self) -> RwLockReadGuard<'_, Option<HardState>> {
+  //   self.hs.read().await
+  // }
+
+  pub async fn read_state_machine(&self) -> MemStoreStateMachine {
+    let state_machine = self.sm.read().await;
+    let result = state_machine.clone();
+    println!("{:?} ", result);
+    result
   }
 }
 
@@ -232,6 +239,7 @@ impl RaftStorage<ClientRequest, ClientResponse> for MemStore {
         return Ok(ClientResponse(res.clone()));
       }
     }
+    println!("WRITE TO SM {:?} {:?}", data.client.clone(), data.status.clone());
     let previous = sm.client_status.insert(data.client.clone(), data.status.clone());
     sm.client_serial_responses
       .insert(data.client.clone(), (data.serial, previous.clone()));

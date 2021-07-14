@@ -39,15 +39,15 @@ async fn main() {
 
   let storage1 = Arc::new(lib::MemStore::new(node_1));
   let storage2 = Arc::new(lib::MemStore::new(node_2));
-  let raft1 = Raft::new(node_1, config1, network1, storage1);
-  let raft2 = Raft::new(node_2, config2, network2, storage2);
+  let raft1 = Raft::new(node_1, config1, network1, storage1.clone());
+  let raft2 = Raft::new(node_2, config2, network2, storage2.clone());
 
   let r1 = raft1.initialize(members.clone()).await;
   let r2 = raft2.initialize(members.clone()).await;
   println!("{:?} {:?}", r1, r2);
 
-  let s1 = server::start_server(raft1, node_1_addr.clone());
-  let s2 = server::start_server(raft2, node_2_addr.clone());
+  let s1 = server::start_server(raft1, storage1, node_1_addr.clone());
+  let s2 = server::start_server(raft2, storage2, node_2_addr.clone());
 
   join!(s1, s2);
 }

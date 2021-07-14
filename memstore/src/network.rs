@@ -2,7 +2,6 @@ use crate::lib::ClientRequest;
 use anyhow::Result;
 
 use std::collections::HashMap;
-// use std::sync::Arc;
 
 use async_raft::async_trait::async_trait;
 // use async_raft::config::Config;
@@ -64,7 +63,7 @@ impl RaftNetwork<ClientRequest> for TonicgRPCNetwork {
     let serialized = response.into_inner().data;
     let deserialized: AppendEntriesResponse = serde_json::from_str(&serialized).unwrap();
 
-    println!("RESPONSE={:?}", deserialized);
+    // println!("RESPONSE={:?}", deserialized);
 
     Ok(deserialized)
   }
@@ -84,7 +83,7 @@ impl RaftNetwork<ClientRequest> for TonicgRPCNetwork {
     let serialized = response.into_inner().data;
     let deserialized: InstallSnapshotResponse = serde_json::from_str(&serialized).unwrap();
 
-    println!("RESPONSE={:?}", deserialized);
+    // println!("RESPONSE={:?}", deserialized);
 
     Ok(deserialized)
   }
@@ -103,7 +102,7 @@ impl RaftNetwork<ClientRequest> for TonicgRPCNetwork {
     let serialized = response.into_inner().data;
     let deserialized: VoteResponse = serde_json::from_str(&serialized).unwrap();
 
-    println!("RESPONSE={:?}", deserialized);
+    // println!("RESPONSE={:?}", deserialized);
 
     Ok(deserialized)
   }
