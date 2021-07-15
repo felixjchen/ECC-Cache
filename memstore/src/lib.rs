@@ -22,12 +22,9 @@ const ERR_INCONSISTENT_LOG: &str =
 pub struct ClientRequest {
   /// The ID of the client which has sent the request.
   pub client: String,
-  /// The serial number of this request.
-  pub serial: u64,
   /// A string describing the status of the client. For a real application, this should probably
   /// be an enum representing all of the various types of requests / operations which a client
   /// can perform.
-  // pub status: String,
   pub key: String,
   pub value: String,
 }
@@ -122,20 +119,20 @@ impl MemStore {
     }
   }
 
-  /// Get a handle to the log for testing purposes.
-  // pub async fn get_log(&self) -> RwLockWriteGuard<'_, BTreeMap<u64, Entry<ClientRequest>>> {
-  //   self.log.write().await
-  // }
+  // Get a handle to the log for testing purposes.
+  pub async fn get_log(&self) -> RwLockWriteGuard<'_, BTreeMap<u64, Entry<ClientRequest>>> {
+    self.log.write().await
+  }
 
-  // /// Get a handle to the state machine for testing purposes.
-  // pub async fn get_state_machine(&self) -> RwLockWriteGuard<'_, MemStoreStateMachine> {
-  //   self.sm.write().await
-  // }
+  /// Get a handle to the state machine for testing purposes.
+  pub async fn get_state_machine(&self) -> RwLockWriteGuard<'_, MemStoreStateMachine> {
+    self.sm.write().await
+  }
 
-  // /// Get a handle to the current hard state for testing purposes.
-  // pub async fn read_hard_state(&self) -> RwLockReadGuard<'_, Option<HardState>> {
-  //   self.hs.read().await
-  // }
+  /// Get a handle to the current hard state for testing purposes.
+  pub async fn read_hard_state(&self) -> RwLockReadGuard<'_, Option<HardState>> {
+    self.hs.read().await
+  }
 
   pub async fn read_state_machine(&self) -> MemStoreStateMachine {
     let state_machine = self.sm.read().await;
@@ -143,13 +140,6 @@ impl MemStore {
     println!("{:?} ", result);
     result
   }
-
-  // pub async fn read_log(&self) -> BTreeMap<u64, Entry<ClientRequest>> {
-  //   let log = self.log.read().await;
-  //   let result = log.clone();
-  //   println!("{:?} ", result);
-  //   result
-  // }
 }
 
 #[async_trait]
@@ -262,14 +252,6 @@ impl RaftStorage<ClientRequest, ClientResponse> for MemStore {
     let mut sm = self.sm.write().await;
     sm.last_applied_log = *index;
     let previous = sm.kv_store.insert(data.key.clone(), data.value.clone());
-    // sm.
-    //   .insert(data.client.clone(), (data.serial, previous.clone()));
-
-    // if let Some((serial, res)) = sm.client_serial_responses.get(&data.client) {
-    //   if serial == &data.serial {
-    //     return Ok(ClientResponse(res.clone()));
-    //   }
-    // }
     Ok(ClientResponse(previous))
   }
 

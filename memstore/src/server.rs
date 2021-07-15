@@ -102,7 +102,6 @@ impl RaftRpc for RaftRpcService {
 
     let new_log = ClientRequest {
       client: "0".into(),
-      serial: 0,
       key,
       value,
     };
