@@ -3,51 +3,70 @@ mod network;
 mod server;
 use async_raft::config::Config;
 use async_raft::{NodeId, Raft};
-use futures::join;
-use std::collections::HashSet;
+use futures::future::join_all;
+
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
-  let config1 = Arc::new(
-    Config::build("primary-raft-group".into())
-      .validate()
-      .expect("failed to build Raft config"),
-  );
-  let config2 = Arc::new(
-    Config::build("primary-raft-group".into())
-      .validate()
-      .expect("failed to build Raft config"),
-  );
-
-  let node_1: NodeId = 1;
-  let node_1_addr = "0.0.0.0:5001".to_string();
-  let node_2: NodeId = 2;
-  let node_2_addr = "0.0.0.0:5002".to_string();
-
+  let node_ids: [NodeId; 4] = [1, 2, 3, 4];
+  let addresses = [
+    "0.0.0.0:5001",
+    "0.0.0.0:5002",
+    "0.0.0.0:5003",
+    "0.0.0.0:5004",
+  ];
   let mut members = HashSet::new();
-  members.insert(node_1);
-  members.insert(node_2);
+  let mut routing_table = HashMap::new();
+  for (i, &id) in node_ids.iter().enumerate() {
+    members.insert(id);
+    routing_table.insert(id, addresses[i].to_string());
+  }
+  println!("{:?} ", members);
+  println!("{:?} ", routing_table);
 
-  let network1 = Arc::new(network::TonicgRPCNetwork::new());
-  let network2 = Arc::new(network::TonicgRPCNetwork::new());
-  network1.add_route(node_1, node_1_addr.clone()).await;
-  network1.add_route(node_2, node_2_addr.clone()).await;
+  // Create storages and networks
+  let mut networks = HashMap::new();
+  let mut storages = HashMap::new();
+  for id in node_ids {
+    let network = Arc::new(network::TonicgRPCNetwork::new(routing_table.clone()));
+    networks.insert(id, network);
+    let storage = Arc::new(lib::MemStore::new(id));
+    storages.insert(id, storage);
+  }
 
-  network2.add_route(node_1, node_1_addr.clone()).await;
-  network2.add_route(node_2, node_2_addr.clone()).await;
+  let mut rafts: HashMap<NodeId, server::MyRaft> = HashMap::new();
+  let config = Arc::new(
+    Config::build("primary-raft-group".into())
+      .validate()
+      .expect("failed to build Raft config"),
+  );
+  for id in node_ids {
+    let raft = Raft::new(
+      id,
+      config.clone(),
+      networks.get(&id).unwrap().clone(),
+      storages.get(&id).unwrap().clone(),
+    );
+    rafts.insert(id, raft);
+  }
 
-  let storage1 = Arc::new(lib::MemStore::new(node_1));
-  let storage2 = Arc::new(lib::MemStore::new(node_2));
-  let raft1 = Raft::new(node_1, config1, network1, storage1.clone());
-  let raft2 = Raft::new(node_2, config2, network2, storage2.clone());
+  // intialize
+  for raft in rafts.values() {
+    raft.initialize(members.clone()).await;
+  }
 
-  let r1 = raft1.initialize(members.clone()).await;
-  let r2 = raft2.initialize(members.clone()).await;
-  println!("{:?} {:?}", r1, r2);
+  // await all servers
+  let mut server_futures = Vec::new();
+  for (id, raft) in rafts.into_iter() {
+    let future = server::start_server(
+      raft,
+      storages.get(&id).unwrap().clone(),
+      routing_table.get(&id).unwrap().clone(),
+    );
+    server_futures.push(future);
+  }
 
-  let s1 = server::start_server(raft1, storage1, node_1_addr.clone());
-  let s2 = server::start_server(raft2, storage2, node_2_addr.clone());
-
-  join!(s1, s2);
+  join_all(server_futures).await;
 }

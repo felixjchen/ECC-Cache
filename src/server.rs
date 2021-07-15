@@ -1,8 +1,8 @@
 use crate::lib::{ClientRequest, ClientResponse, MemStore};
 use crate::network::TonicgRPCNetwork;
 use anyhow::Result;
-use tonic::{transport::Server, Request, Response, Status};
-
+use async_raft::raft::{AppendEntriesRequest, InstallSnapshotRequest, VoteRequest};
+use async_raft::raft::{ClientWriteRequest, Raft};
 use raft_proto::raft_rpc_server::{RaftRpc, RaftRpcServer};
 use raft_proto::{
   AppendEntriesRpcReply, AppendEntriesRpcRequest, ClientReadRpcReply, ClientReadRpcRequest,
@@ -10,11 +10,7 @@ use raft_proto::{
   VoteRequestRpcReply, VoteRequestRpcRequest,
 };
 use std::sync::Arc;
-
-use async_raft::raft::{
-  AppendEntriesRequest, InstallSnapshotRequest, InstallSnapshotResponse, VoteRequest,
-};
-use async_raft::raft::{ClientWriteRequest, Raft};
+use tonic::{transport::Server, Request, Response, Status};
 
 pub mod raft_proto {
   tonic::include_proto!("raft_proto");

@@ -97,8 +97,16 @@ impl MemStore {
     }
   }
 
+  pub async fn read_state_machine(&self) -> MemStoreStateMachine {
+    let state_machine = self.sm.read().await;
+    let result = state_machine.clone();
+    println!("{:?} ", result);
+    result
+  }
+
   /// Create a new `MemStore` instance with some existing state (for testing).
   #[cfg(test)]
+  #[allow(dead_code)]
   pub fn new_with_state(
     id: NodeId,
     log: BTreeMap<u64, Entry<ClientRequest>>,
@@ -118,27 +126,20 @@ impl MemStore {
       current_snapshot,
     }
   }
-
   // Get a handle to the log for testing purposes.
+  #[allow(dead_code)]
   pub async fn get_log(&self) -> RwLockWriteGuard<'_, BTreeMap<u64, Entry<ClientRequest>>> {
     self.log.write().await
   }
-
   /// Get a handle to the state machine for testing purposes.
+  #[allow(dead_code)]
   pub async fn get_state_machine(&self) -> RwLockWriteGuard<'_, MemStoreStateMachine> {
     self.sm.write().await
   }
-
   /// Get a handle to the current hard state for testing purposes.
+  #[allow(dead_code)]
   pub async fn read_hard_state(&self) -> RwLockReadGuard<'_, Option<HardState>> {
     self.hs.read().await
-  }
-
-  pub async fn read_state_machine(&self) -> MemStoreStateMachine {
-    let state_machine = self.sm.read().await;
-    let result = state_machine.clone();
-    println!("{:?} ", result);
-    result
   }
 }
 

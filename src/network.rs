@@ -7,10 +7,7 @@ use async_raft::raft::{
 };
 use async_raft::{NodeId, RaftNetwork};
 use raft_proto::raft_rpc_client::RaftRpcClient;
-use raft_proto::{
-  AppendEntriesRpcReply, AppendEntriesRpcRequest, InstallSnapshotRpcReply,
-  InstallSnapshotRpcRequest, VoteRequestRpcReply, VoteRequestRpcRequest,
-};
+use raft_proto::{AppendEntriesRpcRequest, InstallSnapshotRpcRequest, VoteRequestRpcRequest};
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 
@@ -25,10 +22,9 @@ pub struct TonicgRPCNetwork {
 
 impl TonicgRPCNetwork {
   /// Create a new instance.
-  pub fn new() -> Self {
-    Self {
-      routing_table: Default::default(),
-    }
+  pub fn new(routing_table: HashMap<NodeId, String>) -> Self {
+    let routing_table = RwLock::new(routing_table);
+    Self { routing_table }
   }
 
   pub async fn add_route(&self, peer: NodeId, address: String) {
