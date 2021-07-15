@@ -3,28 +3,32 @@ name = "ECC-Cache"
 version = "0.1.0"
 edition = "2018"
 
-[[bin]]
-name = "distributed-cache-server"
-path = "src/server_cli.rs"
+[[bin]] 
+name = "cli"
+path = "src/cli.rs"
 
 [[bin]] 
-name = "distributed-cache-client"
-path = "src/client.rs"
+name = "raftkv"
+path = "src/main.rs"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-raft ="0.6.0"
-slog = "2.2.0"
-slog-async = "2.3.0"
-slog-term = "2.4.0" 
+anyhow = "1.0.32"
+async-raft = { version="0.6" }
+serde = { version="1.0.114", features=["derive"] }
+serde_json = "1.0.57"
+thiserror = "1.0.20"
+tokio = { version="1.0", default-features=false, features=["fs", "io-util", "macros", "rt", "rt-multi-thread", "sync", "time"] }
 
-clap = "3.0.0-beta.2"
-futures = "0.3.4"
+tracing = { version = "0.1.17" }
+tracing-futures = "0.2.4"
+futures="0.3.15"
+
+
 tonic = "0.5"
 prost = "0.8"
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+clap = "3.0.0-beta.2"
 
 [build-dependencies]
 tonic-build = "0.5"

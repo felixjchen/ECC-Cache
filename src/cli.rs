@@ -1,9 +1,5 @@
 use clap::{App, Arg};
 
-#[path = "lib/server_raft.rs"]
-// mod server;
-mod server_raft;
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let matches = App::new("Distributed Cache")
