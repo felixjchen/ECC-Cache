@@ -5,12 +5,15 @@ use tonic::{transport::Server, Request, Response, Status};
 
 use raft_proto::raft_rpc_server::{RaftRpc, RaftRpcServer};
 use raft_proto::{
-  AppendEntriesRpcReply, AppendEntriesRpcRequest, ClientReadRpcReply, ClientReadRpcRequest, ClientWriteRpcReply, ClientWriteRpcRequest,
-  InstallSnapshotRpcReply, InstallSnapshotRpcRequest, VoteRequestRpcReply, VoteRequestRpcRequest,
+  AppendEntriesRpcReply, AppendEntriesRpcRequest, ClientReadRpcReply, ClientReadRpcRequest,
+  ClientWriteRpcReply, ClientWriteRpcRequest, InstallSnapshotRpcReply, InstallSnapshotRpcRequest,
+  VoteRequestRpcReply, VoteRequestRpcRequest,
 };
 use std::sync::Arc;
 
-use async_raft::raft::{AppendEntriesRequest, InstallSnapshotRequest, InstallSnapshotResponse, VoteRequest};
+use async_raft::raft::{
+  AppendEntriesRequest, InstallSnapshotRequest, InstallSnapshotResponse, VoteRequest,
+};
 use async_raft::raft::{ClientWriteRequest, Raft};
 
 pub mod raft_proto {
@@ -32,9 +35,13 @@ impl RaftRpcService {
 
 #[tonic::async_trait]
 impl RaftRpc for RaftRpcService {
-  async fn append_entries(&self, request: Request<AppendEntriesRpcRequest>) -> Result<Response<AppendEntriesRpcReply>, Status> {
+  async fn append_entries(
+    &self,
+    request: Request<AppendEntriesRpcRequest>,
+  ) -> Result<Response<AppendEntriesRpcReply>, Status> {
     let serialized = request.into_inner().data;
-    let deserialized: AppendEntriesRequest<ClientRequest> = serde_json::from_str(&serialized).unwrap();
+    let deserialized: AppendEntriesRequest<ClientRequest> =
+      serde_json::from_str(&serialized).unwrap();
 
     let entries = deserialized.entries.clone();
 
@@ -43,40 +50,61 @@ impl RaftRpc for RaftRpcService {
     }
 
     let response = self.raft.append_entries(deserialized).await.unwrap();
-    let reply = AppendEntriesRpcReply { data: serde_json::to_string(&response).unwrap() };
+    let reply = AppendEntriesRpcReply {
+      data: serde_json::to_string(&response).unwrap(),
+    };
 
     Ok(Response::new(reply))
   }
 
-  async fn vote_request(&self, request: Request<VoteRequestRpcRequest>) -> Result<Response<VoteRequestRpcReply>, Status> {
+  async fn vote_request(
+    &self,
+    request: Request<VoteRequestRpcRequest>,
+  ) -> Result<Response<VoteRequestRpcReply>, Status> {
     let serialized = request.into_inner().data;
     let deserialized: VoteRequest = serde_json::from_str(&serialized).unwrap();
 
     println!("Got a vote request: {:?}", deserialized);
 
     let response = self.raft.vote(deserialized).await.unwrap();
-    let reply = VoteRequestRpcReply { data: serde_json::to_string(&response).unwrap() };
+    let reply = VoteRequestRpcReply {
+      data: serde_json::to_string(&response).unwrap(),
+    };
 
     Ok(Response::new(reply))
   }
 
-  async fn install_snapshot(&self, request: Request<InstallSnapshotRpcRequest>) -> Result<Response<InstallSnapshotRpcReply>, Status> {
+  async fn install_snapshot(
+    &self,
+    request: Request<InstallSnapshotRpcRequest>,
+  ) -> Result<Response<InstallSnapshotRpcReply>, Status> {
     let serialized = request.into_inner().data;
     let deserialized: InstallSnapshotRequest = serde_json::from_str(&serialized).unwrap();
 
     println!("Got a install_snapshot request: {:?}", deserialized);
 
     let response = self.raft.install_snapshot(deserialized).await.unwrap();
-    let reply = InstallSnapshotRpcReply { data: serde_json::to_string(&response).unwrap() };
+    let reply = InstallSnapshotRpcReply {
+      data: serde_json::to_string(&response).unwrap(),
+    };
 
     Ok(Response::new(reply))
   }
 
-  async fn client_write(&self, request: Request<ClientWriteRpcRequest>) -> Result<Response<ClientWriteRpcReply>, Status> {
+  async fn client_write(
+    &self,
+    request: Request<ClientWriteRpcRequest>,
+  ) -> Result<Response<ClientWriteRpcReply>, Status> {
+    let request = request.into_inner();
+    println!("Got a client_write request: {:?}", request.clone());
+    let key = request.key;
+    let value = request.value;
+
     let new_log = ClientRequest {
       client: "0".into(),
       serial: 0,
-      status: request.into_inner().status,
+      key,
+      value,
     };
 
     println!("Got a client_write request: {:?}", new_log.clone());
@@ -84,16 +112,22 @@ impl RaftRpc for RaftRpcService {
     let raft_request = ClientWriteRequest::new(new_log);
     let raft_response = self.raft.client_write(raft_request).await.unwrap();
 
-    let reply = ClientWriteRpcReply { status: "success".into() };
+    let reply = ClientWriteRpcReply {
+      status: "success".into(),
+    };
     Ok(Response::new(reply))
   }
 
-  async fn client_read(&self, request: Request<ClientReadRpcRequest>) -> Result<Response<ClientReadRpcReply>, Status> {
+  async fn client_read(
+    &self,
+    request: Request<ClientReadRpcRequest>,
+  ) -> Result<Response<ClientReadRpcReply>, Status> {
     let state_machine = self.storage.read_state_machine().await;
 
+    // println!("{:?} ", self.storage.read_log().await);
     println!("{:?} ", state_machine);
     let reply = ClientReadRpcReply {
-      status: serde_json::to_string(&state_machine.client_status).unwrap(),
+      status: serde_json::to_string(&state_machine.kv_store).unwrap(),
     };
     Ok(Response::new(reply))
   }

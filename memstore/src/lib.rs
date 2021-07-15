@@ -1,6 +1,3 @@
-#![cfg_attr(feature = "docinclude", feature(external_doc))]
-#![cfg_attr(feature = "docinclude", doc(include = "../README.md"))]
-
 use std::collections::{BTreeMap, HashMap};
 use std::io::Cursor;
 
@@ -14,7 +11,8 @@ use thiserror::Error;
 use tokio::sync::RwLock;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
-const ERR_INCONSISTENT_LOG: &str = "a query was received which was expecting data to be in place which does not exist in the log";
+const ERR_INCONSISTENT_LOG: &str =
+  "a query was received which was expecting data to be in place which does not exist in the log";
 
 /// The application data request type which the `MemStore` works with.
 ///
@@ -29,7 +27,9 @@ pub struct ClientRequest {
   /// A string describing the status of the client. For a real application, this should probably
   /// be an enum representing all of the various types of requests / operations which a client
   /// can perform.
-  pub status: String,
+  // pub status: String,
+  pub key: String,
+  pub value: String,
 }
 
 impl AppData for ClientRequest {}
@@ -65,9 +65,9 @@ pub struct MemStoreSnapshot {
 pub struct MemStoreStateMachine {
   pub last_applied_log: u64,
   /// A mapping of client IDs to their state info.
-  pub client_serial_responses: HashMap<String, (u64, Option<String>)>,
+  // pub client_serial_responses: HashMap<String, (u64, Option<String>)>,
   /// The current status of a client by ID.
-  pub client_status: HashMap<String, String>,
+  pub kv_store: HashMap<String, String>,
 }
 
 /// An in-memory storage system implementing the `async_raft::RaftStorage` trait.
@@ -91,19 +91,35 @@ impl MemStore {
     let sm = RwLock::new(MemStoreStateMachine::default());
     let hs = RwLock::new(None);
     let current_snapshot = RwLock::new(None);
-    Self { id, log, sm, hs, current_snapshot }
+    Self {
+      id,
+      log,
+      sm,
+      hs,
+      current_snapshot,
+    }
   }
 
   /// Create a new `MemStore` instance with some existing state (for testing).
   #[cfg(test)]
   pub fn new_with_state(
-    id: NodeId, log: BTreeMap<u64, Entry<ClientRequest>>, sm: MemStoreStateMachine, hs: Option<HardState>, current_snapshot: Option<MemStoreSnapshot>,
+    id: NodeId,
+    log: BTreeMap<u64, Entry<ClientRequest>>,
+    sm: MemStoreStateMachine,
+    hs: Option<HardState>,
+    current_snapshot: Option<MemStoreSnapshot>,
   ) -> Self {
     let log = RwLock::new(log);
     let sm = RwLock::new(sm);
     let hs = RwLock::new(hs);
     let current_snapshot = RwLock::new(current_snapshot);
-    Self { id, log, sm, hs, current_snapshot }
+    Self {
+      id,
+      log,
+      sm,
+      hs,
+      current_snapshot,
+    }
   }
 
   /// Get a handle to the log for testing purposes.
@@ -127,6 +143,13 @@ impl MemStore {
     println!("{:?} ", result);
     result
   }
+
+  // pub async fn read_log(&self) -> BTreeMap<u64, Entry<ClientRequest>> {
+  //   let log = self.log.read().await;
+  //   let result = log.clone();
+  //   println!("{:?} ", result);
+  //   result
+  // }
 }
 
 #[async_trait]
@@ -231,18 +254,22 @@ impl RaftStorage<ClientRequest, ClientResponse> for MemStore {
   }
 
   #[tracing::instrument(level = "trace", skip(self, data))]
-  async fn apply_entry_to_state_machine(&self, index: &u64, data: &ClientRequest) -> Result<ClientResponse> {
+  async fn apply_entry_to_state_machine(
+    &self,
+    index: &u64,
+    data: &ClientRequest,
+  ) -> Result<ClientResponse> {
     let mut sm = self.sm.write().await;
     sm.last_applied_log = *index;
-    if let Some((serial, res)) = sm.client_serial_responses.get(&data.client) {
-      if serial == &data.serial {
-        return Ok(ClientResponse(res.clone()));
-      }
-    }
-    println!("WRITE TO SM {:?} {:?}", data.client.clone(), data.status.clone());
-    let previous = sm.client_status.insert(data.client.clone(), data.status.clone());
-    sm.client_serial_responses
-      .insert(data.client.clone(), (data.serial, previous.clone()));
+    let previous = sm.kv_store.insert(data.key.clone(), data.value.clone());
+    // sm.
+    //   .insert(data.client.clone(), (data.serial, previous.clone()));
+
+    // if let Some((serial, res)) = sm.client_serial_responses.get(&data.client) {
+    //   if serial == &data.serial {
+    //     return Ok(ClientResponse(res.clone()));
+    //   }
+    // }
     Ok(ClientResponse(previous))
   }
 
@@ -251,14 +278,7 @@ impl RaftStorage<ClientRequest, ClientResponse> for MemStore {
     let mut sm = self.sm.write().await;
     for (index, data) in entries {
       sm.last_applied_log = **index;
-      if let Some((serial, _)) = sm.client_serial_responses.get(&data.client) {
-        if serial == &data.serial {
-          continue;
-        }
-      }
-      let previous = sm.client_status.insert(data.client.clone(), data.status.clone());
-      sm.client_serial_responses
-        .insert(data.client.clone(), (data.serial, previous.clone()));
+      sm.kv_store.insert(data.key.clone(), data.value.clone());
     }
     Ok(())
   }
@@ -313,7 +333,10 @@ impl RaftStorage<ClientRequest, ClientResponse> for MemStore {
       *current_snapshot = Some(snapshot);
     } // Release log & snapshot write locks.
 
-    tracing::trace!({ snapshot_size = snapshot_bytes.len() }, "log compaction complete");
+    tracing::trace!(
+      { snapshot_size = snapshot_bytes.len() },
+      "log compaction complete"
+    );
     Ok(CurrentSnapshotData {
       term,
       index: last_applied_log,
@@ -329,9 +352,17 @@ impl RaftStorage<ClientRequest, ClientResponse> for MemStore {
 
   #[tracing::instrument(level = "trace", skip(self, snapshot))]
   async fn finalize_snapshot_installation(
-    &self, index: u64, term: u64, delete_through: Option<u64>, id: String, snapshot: Box<Self::Snapshot>,
+    &self,
+    index: u64,
+    term: u64,
+    delete_through: Option<u64>,
+    id: String,
+    snapshot: Box<Self::Snapshot>,
   ) -> Result<()> {
-    tracing::trace!({ snapshot_size = snapshot.get_ref().len() }, "decoding snapshot for installation");
+    tracing::trace!(
+      { snapshot_size = snapshot.get_ref().len() },
+      "decoding snapshot for installation"
+    );
     let raw = serde_json::to_string_pretty(snapshot.get_ref().as_slice())?;
     println!("JSON SNAP:\n{}", raw);
     let new_snapshot: MemStoreSnapshot = serde_json::from_slice(snapshot.get_ref().as_slice())?;
@@ -355,7 +386,10 @@ impl RaftStorage<ClientRequest, ClientResponse> for MemStore {
         }
         None => log.clear(),
       }
-      log.insert(index, Entry::new_snapshot_pointer(index, term, id, membership_config));
+      log.insert(
+        index,
+        Entry::new_snapshot_pointer(index, term, id, membership_config),
+      );
     }
 
     // Update the state machine.
