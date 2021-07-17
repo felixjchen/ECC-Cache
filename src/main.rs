@@ -1,6 +1,6 @@
-mod lib;
 mod network;
 mod server;
+mod storage;
 use async_raft::config::Config;
 use async_raft::{NodeId, Raft};
 use futures::future::join_all;
@@ -32,7 +32,7 @@ async fn main() {
   for id in node_ids {
     let network = Arc::new(network::TonicgRPCNetwork::new(routing_table.clone()));
     networks.insert(id, network);
-    let storage = Arc::new(lib::MemStore::new(id));
+    let storage = Arc::new(storage::MemStore::new(id));
     storages.insert(id, storage);
   }
 
