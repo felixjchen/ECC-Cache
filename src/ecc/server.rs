@@ -43,10 +43,7 @@ impl EccRpc for EccRpcService {
     let key = request.key;
 
     let storage = self.storage.read().await;
-    let value = match storage.get(&key) {
-      Some(val) => Some(val.clone()),
-      None => None,
-    };
+    let value = storage.get(&key).map(|val| val.clone());
 
     let reply = GetReply { value };
 

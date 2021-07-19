@@ -9,7 +9,7 @@ path = "src/cli.rs"
 
 [[bin]] 
 name = "raftkv"
-path = "src/standard/main.rs"
+path = "src/replication/main.rs"
 
 [[bin]] 
 name = "ecckv"
