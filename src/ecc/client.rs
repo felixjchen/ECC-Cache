@@ -9,18 +9,24 @@ pub struct EccClient {
   k: u8,
   n: u8,
   block_size: u8,
+  node_address: Vec<String>,
 }
 
 impl EccClient {
-  pub fn new() -> EccClient {
-    EccClient {}
+  pub fn new(k: u8, n: u8, block_size: u8, node_address: Vec<String>) -> EccClient {
+    EccClient {
+      k,
+      n,
+      block_size,
+      node_address,
+    }
   }
 
   pub fn read(key: String) -> String {
-
+    unimplemented!()
   }
 
-  pub write(key: String, value: String) {
-
+  pub fn write(key: String, value: String) {
+    unimplemented!()
   }
 }

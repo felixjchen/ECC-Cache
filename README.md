@@ -9,6 +9,7 @@ Created a in memory key value store, using two strategies:
 # Todo
 - server initializes client once
 - error handling
+- tests
 - integration tests
 - await join all
 - Storage seperate

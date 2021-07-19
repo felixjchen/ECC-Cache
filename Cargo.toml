@@ -8,7 +8,7 @@ name = "cli"
 path = "src/cli.rs"
 
 [[bin]] 
-name = "raftkv"
+name = "replicationkv"
 path = "src/replication/main.rs"
 
 [[bin]] 

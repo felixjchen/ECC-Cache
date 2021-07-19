@@ -10,6 +10,7 @@ use raft_proto::raft_rpc_client::RaftRpcClient;
 use raft_proto::{AppendEntriesRpcRequest, InstallSnapshotRpcRequest, VoteRequestRpcRequest};
 use std::collections::HashMap;
 use tokio::sync::RwLock;
+use tonic::transport::Channel;
 
 pub mod raft_proto {
   tonic::include_proto!("raft_proto");
@@ -18,13 +19,18 @@ pub mod raft_proto {
 /// A type which emulates a network transport and implements the `RaftNetwork` trait.
 pub struct TonicgRPCNetwork {
   routing_table: RwLock<HashMap<NodeId, String>>,
+  client_table: RwLock<HashMap<NodeId, RaftRpcClient<Channel>>>,
 }
 
 impl TonicgRPCNetwork {
   /// Create a new instance.
   pub fn new(routing_table: HashMap<NodeId, String>) -> Self {
     let routing_table = RwLock::new(routing_table);
-    Self { routing_table }
+    let client_table = Default::default();
+    Self {
+      routing_table,
+      client_table,
+    }
   }
 
   #[allow(dead_code)]
@@ -37,6 +43,21 @@ impl TonicgRPCNetwork {
     let routing_table = self.routing_table.write().await;
     Ok(routing_table.get(&peer).cloned().unwrap())
   }
+
+  pub async fn get_client(&self, peer: NodeId) -> RaftRpcClient<Channel> {
+    let mut client_table = self.client_table.write().await;
+
+    // Need to create connection
+    if !client_table.contains_key(&peer) {
+      let address = self.get_route(peer).await.unwrap();
+      let address = format!("http://{}", address);
+      let client = RaftRpcClient::connect(address).await.unwrap();
+      client_table.insert(peer, client);
+    }
+
+    // Return connection
+    client_table.get(&peer).map(|c| c.clone()).unwrap()
+  }
 }
 
 #[async_trait]
@@ -47,11 +68,7 @@ impl RaftNetwork<ClientRequest> for TonicgRPCNetwork {
     target: NodeId,
     rpc: AppendEntriesRequest<ClientRequest>,
   ) -> Result<AppendEntriesResponse> {
-    let address = self.get_route(target).await?;
-    let address = format!("http://{}", address);
-
-    // TODO Open Client once
-    let mut client = RaftRpcClient::connect(address).await?;
+    let mut client = self.get_client(target).await;
 
     let serialized = serde_json::to_string(&rpc).unwrap();
     let request = tonic::Request::new(AppendEntriesRpcRequest {
@@ -71,11 +88,7 @@ impl RaftNetwork<ClientRequest> for TonicgRPCNetwork {
     target: NodeId,
     rpc: InstallSnapshotRequest,
   ) -> Result<InstallSnapshotResponse> {
-    let address = self.get_route(target).await?;
-    let address = format!("http://{}", address);
-
-    // TODO Open Client once
-    let mut client = RaftRpcClient::connect(address).await?;
+    let mut client = self.get_client(target).await;
 
     let serialized = serde_json::to_string(&rpc).unwrap();
     let request = tonic::Request::new(InstallSnapshotRpcRequest {
@@ -91,11 +104,7 @@ impl RaftNetwork<ClientRequest> for TonicgRPCNetwork {
 
   /// Send a RequestVote RPC to the target Raft node (§5).
   async fn vote(&self, target: NodeId, rpc: VoteRequest) -> Result<VoteResponse> {
-    let address = self.get_route(target).await?;
-    let address = format!("http://{}", address);
-
-    // TODO Open Client once
-    let mut client = RaftRpcClient::connect(address).await?;
+    let mut client = self.get_client(target).await;
     let serialized = serde_json::to_string(&rpc).unwrap();
 
     let request = tonic::Request::new(VoteRequestRpcRequest {

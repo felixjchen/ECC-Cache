@@ -1,5 +1,6 @@
 #[macro_use(shards)]
 extern crate reed_solomon_erasure;
+mod client;
 mod ecc;
 mod server;
 use futures::future::join_all;
