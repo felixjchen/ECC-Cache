@@ -3,11 +3,10 @@ Created a in memory key value store, using two strategies:
 1. Replication using Raft
 2. Error Correcting codes using Reed Solomon
 
-
 ## Assumptions
 - clients are healthy for the duration of a transacation
 - 
-# TODO
+# Todo
 - server initializes client once
 - error handling
 - integration tests
