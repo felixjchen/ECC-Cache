@@ -38,6 +38,7 @@ pub struct ClientResponse(Option<String>);
 impl AppDataResponse for ClientResponse {}
 
 /// Error used to trigger Raft shutdown from storage.
+#[allow(dead_code)]
 #[derive(Clone, Debug, Error)]
 pub enum ShutdownError {
   #[error("unsafe storage error")]

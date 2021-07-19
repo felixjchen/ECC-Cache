@@ -27,6 +27,7 @@ impl TonicgRPCNetwork {
     Self { routing_table }
   }
 
+  #[allow(dead_code)]
   pub async fn add_route(&self, peer: NodeId, address: String) {
     let mut routing_table = self.routing_table.write().await;
     routing_table.insert(peer, address);

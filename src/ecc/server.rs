@@ -51,11 +51,13 @@ impl EccRpc for EccRpcService {
   }
 }
 
-pub async fn start_server(address: String) {
+pub async fn start_server(address: String) -> Result<(), Box<dyn std::error::Error>> {
   let addr = address.parse().unwrap();
   let service = EccRpcService::new();
   Server::builder()
     .add_service(EccRpcServer::new(service))
     .serve(addr)
-    .await;
+    .await?;
+
+  Ok(())
 }

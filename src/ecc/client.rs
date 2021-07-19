@@ -5,10 +5,22 @@ pub mod ecc_proto {
   tonic::include_proto!("ecc_proto");
 }
 
-pub struct EccClient {}
+pub struct EccClient {
+  k: u8,
+  n: u8,
+  block_size: u8,
+}
 
 impl EccClient {
   pub fn new() -> EccClient {
-    EccClient
+    EccClient {}
+  }
+
+  pub fn read(key: String) -> String {
+
+  }
+
+  pub write(key: String, value: String) {
+
   }
 }

@@ -4,12 +4,11 @@ mod storage;
 use async_raft::config::Config;
 use async_raft::{NodeId, Raft};
 use futures::future::join_all;
-
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let node_ids: [NodeId; 4] = [1, 2, 3, 4];
   let addresses = [
     "0.0.0.0:5001",
@@ -54,7 +53,7 @@ async fn main() {
 
   // intialize
   for raft in rafts.values() {
-    raft.initialize(members.clone()).await;
+    raft.initialize(members.clone()).await?;
   }
 
   // await all servers
@@ -69,4 +68,5 @@ async fn main() {
   }
 
   join_all(server_futures).await;
+  Ok(())
 }

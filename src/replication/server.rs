@@ -105,7 +105,7 @@ impl RaftRpc for RaftRpcService {
     println!("Got a client_write request: {:?}", new_log.clone());
 
     let raft_request = ClientWriteRequest::new(new_log);
-    let raft_response = self.raft.client_write(raft_request).await.unwrap();
+    self.raft.client_write(raft_request).await.unwrap();
 
     let reply = ClientWriteRpcReply {
       status: "success".into(),
@@ -127,11 +127,16 @@ impl RaftRpc for RaftRpcService {
   }
 }
 
-pub async fn start_server(raft: MyRaft, storage: Arc<MemStore>, address: String) {
+pub async fn start_server(
+  raft: MyRaft,
+  storage: Arc<MemStore>,
+  address: String,
+) -> Result<(), Box<dyn std::error::Error>> {
   let addr = address.parse().unwrap();
   let service = RaftRpcService::new(raft, storage);
   Server::builder()
     .add_service(RaftRpcServer::new(service))
     .serve(addr)
-    .await;
+    .await?;
+  Ok(())
 }
