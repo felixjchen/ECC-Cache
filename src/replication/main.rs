@@ -52,21 +52,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   }
 
   // intialize
+  let mut futures = Vec::new();
   for raft in rafts.values() {
-    raft.initialize(members.clone()).await?;
+    let future = raft.initialize(members.clone());
+    futures.push(future);
   }
+  join_all(futures).await;
 
   // await all servers
-  let mut server_futures = Vec::new();
+  let mut futures = Vec::new();
   for (id, raft) in rafts.into_iter() {
     let future = server::start_server(
       raft,
       storages.get(&id).unwrap().clone(),
       routing_table.get(&id).unwrap().clone(),
     );
-    server_futures.push(future);
+    futures.push(future);
   }
 
-  join_all(server_futures).await;
+  join_all(futures).await;
   Ok(())
 }

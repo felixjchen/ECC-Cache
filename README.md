@@ -5,12 +5,9 @@ Created a in memory key value store, using two strategies:
 
 ## Assumptions
 - clients are healthy for the duration of a transacation
-- 
+  
 # Todo
-- server initializes client once
-- error handling
-- tests
+- error handling 
 - integration tests
-- await join all
 - Storage seperate
 - Storage brings only value into mem
