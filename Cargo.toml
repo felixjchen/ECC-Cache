@@ -1,5 +1,5 @@
 [package]
-name = "ECC-Cache"
+name = "Distributed-Cache"
 version = "0.1.0"
 edition = "2018"
 
@@ -10,6 +10,10 @@ path = "src/cli.rs"
 [[bin]] 
 name = "raftkv"
 path = "src/standard/main.rs"
+
+[[bin]] 
+name = "ecckv"
+path = "src/ecc/main.rs"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -29,6 +33,7 @@ futures="0.3.15"
 tonic = "0.5"
 prost = "0.8"
 clap = "3.0.0-beta.2"
+reed-solomon-erasure = { version = "4.0", features = [ "simd-accel" ] }
 
 [build-dependencies]
 tonic-build = "0.5"

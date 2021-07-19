@@ -119,7 +119,6 @@ impl RaftRpc for RaftRpcService {
   ) -> Result<Response<ClientReadRpcReply>, Status> {
     let state_machine = self.storage.read_state_machine().await;
 
-    // println!("{:?} ", self.storage.read_log().await);
     println!("{:?} ", state_machine);
     let reply = ClientReadRpcReply {
       status: serde_json::to_string(&state_machine.kv_store).unwrap(),
@@ -130,9 +129,9 @@ impl RaftRpc for RaftRpcService {
 
 pub async fn start_server(raft: MyRaft, storage: Arc<MemStore>, address: String) {
   let addr = address.parse().unwrap();
-  let raft_server = RaftRpcService::new(raft, storage);
+  let service = RaftRpcService::new(raft, storage);
   Server::builder()
-    .add_service(RaftRpcServer::new(raft_server))
+    .add_service(RaftRpcServer::new(service))
     .serve(addr)
     .await;
 }
