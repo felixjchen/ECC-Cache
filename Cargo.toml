@@ -37,6 +37,9 @@ tonic = "0.5"
 prost = "0.8"
 clap = "3.0.0-beta.2"
 reed-solomon-erasure = { version = "4.0", features = [ "simd-accel" ] }
+simple-error = "0.2.3"
+
+
 
 [build-dependencies]
 tonic-build = "0.5"

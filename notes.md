@@ -18,3 +18,10 @@ https://github.com/darrenldl/reed-solomon-erasure
 
 ## Rust Tokio Async
 https://tokio.rs/tokio/tutorial/async
+
+## Await first k
+https://stackoverflow.com/questions/68448854/how-to-await-for-the-first-k-futures
+
+## Str to base 256
+https://doc.rust-lang.org/stable/std/string/struct.String.html#method.into_bytes
+https://doc.rust-lang.org/std/str/fn.from_utf8.html
