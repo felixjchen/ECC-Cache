@@ -15,3 +15,6 @@ https://en.wikipedia.org/wiki/Optimistic_concurrency_control
 
 ## Reed Solomon
 https://github.com/darrenldl/reed-solomon-erasure
+
+## Rust Tokio Async
+https://tokio.rs/tokio/tutorial/async

@@ -8,12 +8,16 @@ name = "cli"
 path = "src/cli.rs"
 
 [[bin]] 
-name = "replicationkv"
+name = "replication-server"
 path = "src/replication/main.rs"
 
 [[bin]] 
-name = "ecckv"
-path = "src/ecc/main.rs"
+name = "ecc-server"
+path = "src/ecc/server.rs"
+
+[[bin]] 
+name = "ecc-client"
+path = "src/ecc/client.rs"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -28,7 +32,6 @@ tokio = { version="1.0", default-features=false, features=["fs", "io-util", "mac
 tracing = { version = "0.1.17" }
 tracing-futures = "0.2.4"
 futures="0.3.15"
-
 
 tonic = "0.5"
 prost = "0.8"

@@ -1,6 +1,7 @@
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
 use ecc_proto::{GetReply, GetRequest, SetReply, SetRequest};
 use std::collections::HashMap;
+use std::env;
 use tokio::sync::RwLock;
 use tonic::{transport::Server, Request, Response, Status};
 
@@ -54,10 +55,21 @@ impl EccRpc for EccRpcService {
 pub async fn start_server(address: String) -> Result<(), Box<dyn std::error::Error>> {
   let addr = address.parse().unwrap();
   let service = EccRpcService::new();
+  println!("Starting ecc cache node at {:?}", addr);
   Server::builder()
     .add_service(EccRpcServer::new(service))
     .serve(addr)
     .await?;
+
+  Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let args: Vec<String> = env::args().collect();
+
+  let address = args[1].clone();
+  start_server(address).await?;
 
   Ok(())
 }
