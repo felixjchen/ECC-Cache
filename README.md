@@ -5,9 +5,22 @@ Created a in memory key value store, using two strategies:
 
 ## Assumptions
 - clients are healthy for the duration of a transacation
-  
-# Todo
+
+## Todo overall
+- common config files
+- common cli
+- error handling 
+- integration tests
+
+## Todo replication
 - error handling 
 - integration tests
 - Storage seperate
 - Storage brings only value into mem
+- client
+
+## Todo ecc
+- optomistic concurrency writes
+- get key does not exist
+- config files
+- restore
