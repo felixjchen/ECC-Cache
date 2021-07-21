@@ -17,9 +17,7 @@ Created two in memory key value stores, using two strategies:
 - cleanup logging
 
 ## Todo raft
-- client
 - Storage hard state
-- bad leader writes
 - check snapshotting logic
 
 ## Todo ecc
