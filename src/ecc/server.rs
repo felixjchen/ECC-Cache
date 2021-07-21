@@ -1,5 +1,6 @@
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
 use ecc_proto::{GetReply, GetRequest, SetReply, SetRequest};
+use futures::future::join_all;
 use std::collections::HashMap;
 use std::env;
 use tokio::sync::RwLock;
@@ -64,6 +65,18 @@ pub async fn start_server(address: String) -> Result<(), Box<dyn std::error::Err
   Ok(())
 }
 
+pub async fn start_many_servers(addresses: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+  let mut futures = Vec::new();
+  for i in addresses {
+    let future = start_server(i);
+    futures.push(future);
+  }
+  join_all(futures).await;
+
+  Ok(())
+}
+
+// cargo run --bin ecc-server 0.0.0.0:3001
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let args: Vec<String> = env::args().collect();

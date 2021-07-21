@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2018"
 
 # [[bin]] 
-# name = "cli"
-# path = "src/cli.rs"
+# name = "main"
+# path = "src/main.rs"
 
 # [[bin]] 
 # name = "replication-server"
@@ -33,7 +33,7 @@ tracing-futures = "0.2.4"
 futures="0.3.15"
 tonic = "0.5"
 prost = "0.8"
-clap = "3.0.0-beta.2"
+clap = "2.33.3"
 reed-solomon-erasure = { version = "4.0", features = [ "simd-accel" ] }
 simple-error = "0.2.3"
 config = {version = "0.11", features=["json"]}
