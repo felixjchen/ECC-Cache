@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let addr = matches.value_of("address").unwrap().to_string();
         let recover = matches.value_of("recover").unwrap().to_string() == "recover";
         match servers.iter().position(|i| i.clone() == addr) {
-          Some(id) => start_server(id, addr, servers.clone(), recover).await?,
+          Some(id) => start_server(id, addr, recover).await?,
           None => bail!("server address not found in config"),
         }
       }

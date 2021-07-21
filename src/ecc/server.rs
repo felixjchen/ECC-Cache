@@ -15,20 +15,14 @@ pub mod ecc_proto {
 
 pub struct EccRpcService {
   id: usize,
-  servers: Vec<String>,
   storage: RwLock<HashMap<String, String>>,
 }
 
 impl EccRpcService {
-  pub async fn new(
-    id: usize,
-    servers: Vec<String>,
-    recover: bool,
-  ) -> Result<EccRpcService, Box<dyn std::error::Error>> {
+  pub async fn new(id: usize, recover: bool) -> Result<EccRpcService, Box<dyn std::error::Error>> {
     let res = EccRpcService {
       id,
       storage: RwLock::new(HashMap::new()),
-      servers,
     };
 
     if recover {
@@ -102,11 +96,10 @@ impl EccRpc for EccRpcService {
 pub async fn start_server(
   id: usize,
   addr: String,
-  addresses: Vec<String>,
   recover: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let addr = addr.parse().unwrap();
-  let service = EccRpcService::new(id, addresses, recover).await?;
+  let service = EccRpcService::new(id, recover).await?;
   println!("Starting ecc cache node at {:?}", addr);
   Server::builder()
     .add_service(EccRpcServer::new(service))
@@ -118,7 +111,7 @@ pub async fn start_server(
 pub async fn start_many_servers(addresses: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
   let mut futures = Vec::new();
   for (id, addr) in addresses.clone().into_iter().enumerate() {
-    let future = start_server(id, addr, addresses.clone(), false);
+    let future = start_server(id, addr, false);
     futures.push(future);
   }
   join_all(futures).await;
