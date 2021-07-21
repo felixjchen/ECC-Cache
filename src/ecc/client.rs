@@ -1,11 +1,10 @@
-#[macro_use]
-extern crate simple_error;
 use ecc_proto::ecc_rpc_client::EccRpcClient;
 use ecc_proto::{GetRequest, SetRequest};
 use futures::future::join_all;
 use futures::prelude::*;
 use futures::stream::FuturesUnordered;
 use reed_solomon_erasure::galois_8::ReedSolomon;
+use simple_error::bail;
 use std::collections::HashMap;
 use std::env;
 use std::str;

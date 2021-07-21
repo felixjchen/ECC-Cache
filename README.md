@@ -21,5 +21,6 @@ Created a in memory key value store, using two strategies:
 
 ## Todo ecc
 - optomistic concurrency writes
-- config files
 - restore
+- config files
+- better timeout

@@ -1,5 +1,5 @@
-use crate::network::TonicgRPCNetwork;
-use crate::storage::{ClientRequest, ClientResponse, MemStore};
+use crate::replication::network::TonicgRPCNetwork;
+use crate::replication::storage::{ClientRequest, ClientResponse, MemStore};
 use anyhow::Result;
 use async_raft::raft::{AppendEntriesRequest, InstallSnapshotRequest, VoteRequest};
 use async_raft::raft::{ClientWriteRequest, Raft};

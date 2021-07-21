@@ -1,4 +1,4 @@
-use crate::storage::ClientRequest;
+use crate::replication::storage::ClientRequest;
 use anyhow::Result;
 use async_raft::async_trait::async_trait;
 use async_raft::raft::{

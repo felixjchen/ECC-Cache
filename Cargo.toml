@@ -1,15 +1,15 @@
 [package]
-name = "Distributed-Cache"
+name = "distributed_cache"
 version = "0.1.0"
 edition = "2018"
 
-[[bin]] 
-name = "cli"
-path = "src/cli.rs"
+# [[bin]] 
+# name = "cli"
+# path = "src/cli.rs"
 
-[[bin]] 
-name = "replication-server"
-path = "src/replication/main.rs"
+# [[bin]] 
+# name = "replication-server"
+# path = "src/replication/main.rs"
 
 [[bin]] 
 name = "ecc-server"
@@ -28,16 +28,15 @@ serde = { version="1.0.114", features=["derive"] }
 serde_json = "1.0.57"
 thiserror = "1.0.20"
 tokio = { version="1.0", default-features=false, features=["fs", "io-util", "macros", "rt", "rt-multi-thread", "sync", "time"] }
-
 tracing = { version = "0.1.17" }
 tracing-futures = "0.2.4"
 futures="0.3.15"
-
 tonic = "0.5"
 prost = "0.8"
 clap = "3.0.0-beta.2"
 reed-solomon-erasure = { version = "4.0", features = [ "simd-accel" ] }
 simple-error = "0.2.3"
+config = {version = "0.11", features=["json"]}
 
 
 
