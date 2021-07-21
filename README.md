@@ -37,6 +37,7 @@ Created two in memory key value stores, using two strategies:
 - created ECC client / server
   - Servers contain key value maps
     - Each server contains a block, where k*block_size = |message|, **we only need k blocks to reconstruct the message**
+    - Reed Solomon requires Galois field 2^8... our message needs to be base 256. UTF8 does this for us, common characters have 1 char - 1 number in base256, rare characters are less efficient
     - Can recover if told so
   - Client ECC code
     - Reads first k responses, constructs message
