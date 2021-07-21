@@ -36,6 +36,7 @@ Created two in memory key value stores, using two strategies:
 ## Week 2
 - created ECC client / server
   - Servers contain key value maps
+    - Each server contains a block, where k*block_size = |message|, **we only need k blocks to reconstruct the message**
     - Can recover if told so
   - Client ECC code
     - Reads first k responses, constructs message
