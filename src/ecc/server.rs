@@ -1,5 +1,5 @@
 use crate::ecc::client::EccClient;
-use crate::ecc::get_ecc_cache_settings;
+use crate::ecc::get_ecc_settings;
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
 use ecc_proto::{GetKeysReply, GetKeysRequest, GetReply, GetRequest, SetReply, SetRequest};
 use futures::future::join_all;
@@ -34,7 +34,7 @@ impl EccRpcService {
   async fn recover(&self) -> Result<(), Box<dyn std::error::Error>> {
     // TODO: Probably want to recover while no transacations are in flight
     println!("RECOVER for {:?}", self.id);
-    let (k, n, block_size, servers) = get_ecc_cache_settings();
+    let (k, n, block_size, servers) = get_ecc_settings();
     let target = (self.id + 1) % servers.len();
 
     // Get all keys to fill

@@ -1,7 +1,7 @@
 pub mod client;
 pub mod server;
 
-pub fn get_ecc_cache_settings() -> (usize, usize, usize, Vec<String>) {
+pub fn get_ecc_settings() -> (usize, usize, usize, Vec<String>) {
   let mut settings = config::Config::default();
   settings.merge(config::File::with_name("config")).unwrap();
 

@@ -7,15 +7,10 @@ use futures::future::join_all;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-pub async fn start_raft(// addresses: Vec<String>,
+pub async fn start_raft(
+  node_ids: Vec<NodeId>,
+  addresses: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let node_ids: [NodeId; 4] = [1, 2, 3, 4];
-  let addresses = [
-    "0.0.0.0:5001",
-    "0.0.0.0:5002",
-    "0.0.0.0:5003",
-    "0.0.0.0:5004",
-  ];
   let mut members = HashSet::new();
   let mut routing_table = HashMap::new();
   for (i, &id) in node_ids.iter().enumerate() {

@@ -1,6 +1,7 @@
 use clap::{App, Arg, SubCommand};
 mod ecc;
 mod raft;
+use async_raft::NodeId;
 use ecc::client::EccClient;
 use ecc::server::{start_many_servers, start_server};
 use simple_error::bail;
@@ -77,7 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   // ECC
   if let Some(matches) = matches.subcommand_matches("ecc") {
     // Read ecc settings from config.json
-    let (k, n, block_size, servers) = ecc::get_ecc_cache_settings();
+    let (k, n, block_size, servers) = ecc::get_ecc_settings();
     // ECC Server CLI
     if let Some(matches) = matches.subcommand_matches("server") {
       // Start all ECC servers
@@ -113,9 +114,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   // Raft
   if let Some(matches) = matches.subcommand_matches("raft") {
+    let (n, node_ids, servers) = raft::get_raft_settings();
     if let Some(matches) = matches.subcommand_matches("server") {
       if let Some(matches) = matches.subcommand_matches("startAll") {
-        raft::raft::start_raft().await?;
+        raft::raft::start_raft(node_ids, servers).await?;
       }
       if let Some(matches) = matches.subcommand_matches("startOne") {}
     }
