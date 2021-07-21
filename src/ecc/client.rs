@@ -173,7 +173,6 @@ impl EccClient {
     }
     let futures = futures.into_iter().collect::<FuturesUnordered<_>>();
     let first_k = futures.take(self.k).collect::<Vec<_>>().await;
-    println!("{:?}", first_k);
 
     // Empty codeword
     let mut codeword: Vec<Option<Vec<u8>>> = vec![None; self.n];
@@ -191,7 +190,7 @@ impl EccClient {
           let result: Option<Vec<u8>> = result.map(|x| serde_json::from_str(&x).unwrap());
           codeword[i] = result;
         }
-        _ => bail!("Get error"),
+        _ => bail!("Didn't get k responses..."),
       }
     }
 
@@ -210,13 +209,11 @@ impl EccClient {
       Some(codeword) => {
         // Process into string
         let flattened: Vec<u8> = codeword.into_iter().flatten().collect();
-        println!("FLAT {:?}", flattened.clone());
         let mut flattened: Vec<u8> = (&flattened[..self.message_size]).to_vec();
         // pop padding
         while let Some(0) = flattened.last() {
           flattened.pop();
         }
-        println!("{:?}", flattened.clone());
         let message = str::from_utf8(&flattened).unwrap();
         Ok(Some(message.to_string()))
       }

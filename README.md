@@ -20,7 +20,7 @@ Created two in memory key value stores, using two strategies:
 - client
 - Storage hard state
 - bad leader writes
-- 
+- check snapshotting logic
 
 ## Todo ecc
 - optomistic concurrency writes

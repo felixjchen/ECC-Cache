@@ -17,7 +17,7 @@ pub struct RaftClient {
 impl RaftClient {
   pub async fn new(node_ids: Vec<NodeId>, addresses: Vec<String>) -> RaftClient {
     let mut client_table = HashMap::new();
-    let last_leader = 0;
+    let last_leader = node_ids[0].clone();
     let n = client_table.len() as u64;
 
     for (id, addr) in node_ids.iter().zip(addresses.iter()) {
@@ -61,6 +61,7 @@ impl RaftClient {
           let response = response.into_inner();
 
           // Check if leader has changed, if not we're good!
+          println!("{:?}", response);
           match response.leader_id {
             Some(new_leader) => {
               self.last_leader = new_leader;
@@ -98,6 +99,7 @@ impl RaftClient {
           let response = response.into_inner();
 
           // Check if leader has changed, if not we're good!
+          println!("{:?}", response);
           match response.leader_id {
             Some(new_leader) => {
               self.last_leader = new_leader;
