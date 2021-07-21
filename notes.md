@@ -26,8 +26,3 @@ https://stackoverflow.com/questions/68448854/how-to-await-for-the-first-k-future
 https://doc.rust-lang.org/stable/std/string/struct.String.html#method.into_bytes
 https://doc.rust-lang.org/std/str/fn.from_utf8.html
 
-
-## This Week
-- created ECC client / server
-  - Servers contain key value maps
-  - Client 
