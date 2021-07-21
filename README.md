@@ -1,7 +1,9 @@
 # Distributed-Cache
-Created a in memory key value store, using two strategies:
+Created two in memory key value stores, using two strategies:
 1. Raft replication
-2. Error Correcting codes using Reed Solomon
+2. Error Correcting Codes (Reed Solomon)
+
+## Motivation
 
 ## Assumptions
 - clients are healthy for the duration of a transacation
