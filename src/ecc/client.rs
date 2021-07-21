@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate simple_error;
 use ecc_proto::ecc_rpc_client::EccRpcClient;
-use ecc_proto::{GetReply, GetRequest, SetReply, SetRequest};
+use ecc_proto::{GetRequest, SetRequest};
 use futures::future::join_all;
 use futures::prelude::*;
 use futures::stream::FuturesUnordered;
@@ -139,7 +139,7 @@ impl EccClient {
     }
   }
 
-  pub async fn read(&self, key: String) -> Result<String, Box<dyn std::error::Error>> {
+  pub async fn read(&self, key: String) -> Result<Option<String>, Box<dyn std::error::Error>> {
     // Get first k responses
     let mut futures = Vec::new();
     for addr in self.servers.clone() {
@@ -148,15 +148,18 @@ impl EccClient {
     }
     let futures = futures.into_iter().collect::<FuturesUnordered<_>>();
     let first_k = futures.take(self.k).collect::<Vec<_>>().await;
+    println!("{:?}", first_k);
 
     // Empty codeword
     let mut codeword: Vec<Option<Vec<u8>>> = vec![None; self.n];
-    println!("{:?}", first_k);
 
     // Fill in codeword
+    let mut all_none = true;
     for response in first_k {
       match response {
         Ok((addr, result)) => {
+          // Check if result is none
+          all_none = all_none && result.is_none();
           // Get server index
           let i = self.index_table.get(&addr).unwrap().clone();
           // String to vec of u8
@@ -165,6 +168,10 @@ impl EccClient {
         }
         _ => bail!("Get error"),
       }
+    }
+
+    if all_none {
+      return Ok(None);
     }
 
     // Reconstruct message
@@ -183,9 +190,7 @@ impl EccClient {
 
     println!("{:?}", flattened.clone());
     let message = str::from_utf8(&flattened).unwrap();
-    println!("{:?}", message);
-
-    Ok(message.to_string())
+    Ok(Some(message.to_string()))
   }
 }
 
@@ -211,11 +216,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   //   .get_once(servers[1].clone(), "yes".to_string())
   //   .await?;
 
-  client.read("josie".to_string()).await;
+  let value = client.read("nope".to_string()).await?;
+  println!("{:?}", value);
 
-  // let mut converter = convert::Convert::new(2, 256);
-  // let output = converter.convert::<u8, u8>(&vec![1, 1, 1, 1, 1, 1, 0, 1, 1]);
-  // println!("{:?}", output);
-
+  // client.read("josie".to_string()).await?;
   Ok(())
 }

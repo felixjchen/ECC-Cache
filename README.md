@@ -21,6 +21,5 @@ Created a in memory key value store, using two strategies:
 
 ## Todo ecc
 - optomistic concurrency writes
-- get key does not exist
 - config files
 - restore
