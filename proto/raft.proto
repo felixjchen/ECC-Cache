@@ -38,7 +38,7 @@ message ClientWriteRpcRequest {
   string value = 2;
 }
 message ClientWriteRpcReply {
-  string status = 1;
+  optional uint64 leader_id = 1;
 }
 
 message ClientReadRpcRequest {
@@ -46,4 +46,5 @@ message ClientReadRpcRequest {
 }
 message ClientReadRpcReply {
   optional string value = 1;
+  optional uint64 leader_id = 2;
 }

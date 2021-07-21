@@ -20,7 +20,7 @@ const ERR_INCONSISTENT_LOG: &str =
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClientRequest {
   /// The ID of the client which has sent the request.
-  pub client: String,
+  // pub client: String,
   /// A string describing the status of the client. For a real application, this should probably
   /// be an enum representing all of the various types of requests / operations which a client
   /// can perform.
@@ -100,7 +100,6 @@ impl MemStore {
   pub async fn read_state_machine(&self) -> MemStoreStateMachine {
     let state_machine = self.sm.read().await;
     let result = state_machine.clone();
-    println!("{:?} ", result);
     result
   }
 

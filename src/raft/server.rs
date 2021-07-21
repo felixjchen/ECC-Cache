@@ -1,6 +1,7 @@
 use crate::raft::network::TonicgRPCNetwork;
 use crate::raft::storage::{ClientRequest, ClientResponse, MemStore};
 use anyhow::Result;
+use async_raft::error::{ClientReadError, ClientWriteError};
 use async_raft::raft::{AppendEntriesRequest, InstallSnapshotRequest, VoteRequest};
 use async_raft::raft::{ClientWriteRequest, Raft};
 use raft_proto::raft_rpc_server::{RaftRpc, RaftRpcServer};
@@ -60,8 +61,6 @@ impl RaftRpc for RaftRpcService {
     let serialized = request.into_inner().data;
     let deserialized: VoteRequest = serde_json::from_str(&serialized).unwrap();
 
-    println!("Got a vote request: {:?}", deserialized);
-
     let response = self.raft.vote(deserialized).await.unwrap();
     let reply = VoteRequestRpcReply {
       data: serde_json::to_string(&response).unwrap(),
@@ -77,8 +76,6 @@ impl RaftRpc for RaftRpcService {
     let serialized = request.into_inner().data;
     let deserialized: InstallSnapshotRequest = serde_json::from_str(&serialized).unwrap();
 
-    println!("Got a install_snapshot request: {:?}", deserialized);
-
     let response = self.raft.install_snapshot(deserialized).await.unwrap();
     let reply = InstallSnapshotRpcReply {
       data: serde_json::to_string(&response).unwrap(),
@@ -92,24 +89,17 @@ impl RaftRpc for RaftRpcService {
     request: Request<ClientWriteRpcRequest>,
   ) -> Result<Response<ClientWriteRpcReply>, Status> {
     let request = request.into_inner();
-    println!("Got a client_write request: {:?}", request.clone());
     let key = request.key;
     let value = request.value;
 
-    let new_log = ClientRequest {
-      client: "0".into(),
-      key,
-      value,
-    };
-
-    println!("Got a client_write request: {:?}", new_log.clone());
-
+    let new_log = ClientRequest { key, value };
     let raft_request = ClientWriteRequest::new(new_log);
-    self.raft.client_write(raft_request).await.unwrap();
-
-    let reply = ClientWriteRpcReply {
-      status: "success".into(),
+    let reply = match self.raft.client_write(raft_request).await {
+      Ok(res) => ClientWriteRpcReply { leader_id: None },
+      Err(ClientWriteError::ForwardToLeader(_, leader_id)) => ClientWriteRpcReply { leader_id },
+      Err(_) => panic!("raft write error"),
     };
+
     Ok(Response::new(reply))
   }
 
@@ -118,14 +108,22 @@ impl RaftRpc for RaftRpcService {
     request: Request<ClientReadRpcRequest>,
   ) -> Result<Response<ClientReadRpcReply>, Status> {
     let request = request.into_inner();
-    println!("Got a client_read request: {:?}", request.clone());
     let key = request.key;
 
+    // Guard stale reads
     let state_machine = self.storage.read_state_machine().await;
-
-    Ok(Response::new(ClientReadRpcReply {
-      value: state_machine.kv_store.get(&key).cloned(),
-    }))
+    let reply = match self.raft.client_read().await {
+      Ok(res) => ClientReadRpcReply {
+        value: state_machine.kv_store.get(&key).cloned(),
+        leader_id: None,
+      },
+      Err(ClientReadError::ForwardToLeader(leader_id)) => ClientReadRpcReply {
+        value: None,
+        leader_id,
+      },
+      Err(_) => panic!("raft write error"),
+    };
+    Ok(Response::new(reply))
   }
 }
 

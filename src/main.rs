@@ -117,21 +117,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (n, node_ids, servers) = raft::get_raft_settings();
     if let Some(matches) = matches.subcommand_matches("server") {
       if let Some(matches) = matches.subcommand_matches("startAll") {
-        raft::raft::start_raft(node_ids, servers).await?;
+        raft::raft::start_raft(node_ids.clone(), servers.clone()).await?;
       }
-      if let Some(matches) = matches.subcommand_matches("startOne") {}
+      if let Some(matches) = matches.subcommand_matches("startOne") {
+        unimplemented!("TODO");
+      }
     }
     if let Some(matches) = matches.subcommand_matches("client") {
+      let mut client = raft::client::RaftClient::new(node_ids.clone(), servers.clone()).await;
       // SET KV
       if let Some(matches) = matches.subcommand_matches("set") {
         let key = matches.value_of("key").unwrap().to_string();
         let value = matches.value_of("value").unwrap().to_string();
-        // client.set(key, value).await?;
+        client.set(key, value).await?;
       }
       // GET K
       if let Some(matches) = matches.subcommand_matches("get") {
         let key = matches.value_of("key").unwrap().to_string();
-        // println!("{:?}", client.get(key).await?);
+        println!("{:?}", client.get(key).await?);
       }
     }
   }
