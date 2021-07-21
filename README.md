@@ -7,20 +7,14 @@ Created a in memory key value store, using two strategies:
 - clients are healthy for the duration of a transacation
 
 ## Todo overall
-- common config files
-- common cli
 - error handling 
 - integration tests
 
 ## Todo replication
-- error handling 
-- integration tests
-- Storage seperate
-- Storage brings only value into mem
 - client
+- Storage hard state
 
 ## Todo ecc
 - optomistic concurrency writes
-- restore
-- config files
+- restore (no in flight transactions?)
 - better timeout

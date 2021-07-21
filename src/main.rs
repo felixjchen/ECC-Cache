@@ -2,26 +2,8 @@ use clap::{App, Arg, SubCommand};
 mod ecc;
 mod replication;
 use ecc::client::EccClient;
-use ecc::server::start_many_servers;
+use ecc::server::{start_many_servers, start_server};
 use simple_error::bail;
-
-fn get_ecc_cache_settings() -> (usize, usize, usize, Vec<String>) {
-  let mut settings = config::Config::default();
-  settings.merge(config::File::with_name("config")).unwrap();
-
-  let servers = settings
-    .get_array("servers")
-    .unwrap()
-    .iter()
-    .map(|x| x.to_string())
-    .collect::<Vec<String>>();
-
-  let k = settings.get_int("k").unwrap() as usize;
-  let n = settings.get_int("n").unwrap() as usize;
-  let block_size = settings.get_int("block_size").unwrap() as usize;
-
-  (k, n, block_size, servers)
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,7 +23,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           .subcommand(
             SubCommand::with_name("startOne")
               .about("Start a single node from config.json. Meant to test restoring nodes.")
-              .arg(Arg::with_name("address").help("a").required(true).index(1)),
+              .arg(Arg::with_name("address").help("a").required(true).index(1))
+              .arg(Arg::with_name("recover").help("a").required(false).index(2).default_value("no"))
           )
         )
         .subcommand(SubCommand::with_name("client")
@@ -66,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   if let Some(matches) = matches.subcommand_matches("ecc") {
     // Read ecc settings from config.json
-    let (k, n, block_size, servers) = get_ecc_cache_settings();
+    let (k, n, block_size, servers) = ecc::get_ecc_cache_settings();
     // ECC Server CLI
     if let Some(matches) = matches.subcommand_matches("server") {
       // Start all ECC servers
@@ -74,7 +57,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         start_many_servers(servers.clone()).await?;
       }
       // Start one ECC server node during restore
-      if let Some(_) = matches.subcommand_matches("startOne") {}
+      if let Some(matches) = matches.subcommand_matches("startOne") {
+        let addr = matches.value_of("address").unwrap().to_string();
+        let recover = matches.value_of("recover").unwrap().to_string() == "recover";
+        match servers.iter().position(|i| i.clone() == addr) {
+          Some(id) => start_server(id, addr, servers.clone(), recover).await?,
+          None => bail!("server address not found in config"),
+        }
+      }
     }
     // ECC Client CLI
     if let Some(matches) = matches.subcommand_matches("client") {
@@ -83,12 +73,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       if let Some(matches) = matches.subcommand_matches("set") {
         let key = matches.value_of("key").unwrap().to_string();
         let value = matches.value_of("value").unwrap().to_string();
-        client.write(key, value).await?;
+        client.set(key, value).await?;
       }
       // GET K
       if let Some(matches) = matches.subcommand_matches("get") {
         let key = matches.value_of("key").unwrap().to_string();
-        println!("{:?}", client.read(key).await?);
+        println!("{:?}", client.get(key).await?);
       }
     }
   }

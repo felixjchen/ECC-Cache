@@ -3,23 +3,6 @@ name = "distributed_cache"
 version = "0.1.0"
 edition = "2018"
 
-# [[bin]] 
-# name = "main"
-# path = "src/main.rs"
-
-# [[bin]] 
-# name = "replication-server"
-# path = "src/replication/main.rs"
-
-[[bin]] 
-name = "ecc-server"
-path = "src/ecc/server.rs"
-
-[[bin]] 
-name = "ecc-client"
-path = "src/ecc/client.rs"
-
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 anyhow = "1.0.32"
@@ -37,7 +20,6 @@ clap = "2.33.3"
 reed-solomon-erasure = { version = "4.0", features = [ "simd-accel" ] }
 simple-error = "0.2.3"
 config = {version = "0.11", features=["json"]}
-
 
 
 [build-dependencies]

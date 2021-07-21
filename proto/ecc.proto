@@ -4,6 +4,7 @@ package ecc_proto;
 service EccRpc {
   rpc Set (SetRequest) returns (SetReply);
   rpc Get (GetRequest) returns (GetReply);
+  rpc GetKeys (GetKeysRequest) returns (GetKeysReply);
 }
 
 message SetRequest {
@@ -19,4 +20,10 @@ message GetRequest {
 }
 message GetReply {
   optional string value = 1;
+}
+
+message GetKeysRequest {
+}
+message GetKeysReply {
+  string keys = 1;
 }

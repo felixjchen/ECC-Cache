@@ -1,6 +1,9 @@
+use crate::ecc::client::EccClient;
+use crate::ecc::get_ecc_cache_settings;
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
-use ecc_proto::{GetReply, GetRequest, SetReply, SetRequest};
+use ecc_proto::{GetKeysReply, GetKeysRequest, GetReply, GetRequest, SetReply, SetRequest};
 use futures::future::join_all;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
 use tokio::sync::RwLock;
@@ -11,14 +14,49 @@ pub mod ecc_proto {
 }
 
 pub struct EccRpcService {
+  id: usize,
+  servers: Vec<String>,
   storage: RwLock<HashMap<String, String>>,
 }
 
 impl EccRpcService {
-  pub fn new() -> EccRpcService {
-    EccRpcService {
+  pub async fn new(
+    id: usize,
+    servers: Vec<String>,
+    recover: bool,
+  ) -> Result<EccRpcService, Box<dyn std::error::Error>> {
+    let res = EccRpcService {
+      id,
       storage: RwLock::new(HashMap::new()),
+      servers,
+    };
+
+    if recover {
+      res.recover().await;
     }
+    Ok(res)
+  }
+
+  async fn recover(&self) -> Result<(), Box<dyn std::error::Error>> {
+    // TODO: Probably want to recover while no transacations are in flight
+    println!("RECOVER for {:?}", self.id);
+    let (k, n, block_size, servers) = get_ecc_cache_settings();
+    let target = (self.id + 1) % servers.len();
+
+    // Get all keys to fill
+    let client = EccClient::new(k, n, block_size, servers.clone()).await;
+    let keys = client.get_keys_once(servers[target].clone()).await?;
+
+    // Get all values
+    let mut storage = self.storage.write().await;
+    for key in keys {
+      let codeword = client.get_codeword(key.clone()).await?.unwrap();
+      let parity = serde_json::to_string(&codeword[self.id]).unwrap();
+      storage.insert(key, parity);
+    }
+
+    println!("RECOVERED {:?}", storage);
+    Ok(())
   }
 }
 
@@ -51,38 +89,39 @@ impl EccRpc for EccRpcService {
 
     Ok(Response::new(reply))
   }
+
+  async fn get_keys(&self, _: Request<GetKeysRequest>) -> Result<Response<GetKeysReply>, Status> {
+    let storage = self.storage.read().await;
+    let keys = storage.keys().cloned().collect::<Vec<String>>();
+    let keys = serde_json::to_string(&keys).unwrap();
+    let reply = GetKeysReply { keys };
+    Ok(Response::new(reply))
+  }
 }
 
-pub async fn start_server(address: String) -> Result<(), Box<dyn std::error::Error>> {
-  let addr = address.parse().unwrap();
-  let service = EccRpcService::new();
+pub async fn start_server(
+  id: usize,
+  addr: String,
+  addresses: Vec<String>,
+  recover: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+  let addr = addr.parse().unwrap();
+  let service = EccRpcService::new(id, addresses, recover).await?;
   println!("Starting ecc cache node at {:?}", addr);
   Server::builder()
     .add_service(EccRpcServer::new(service))
     .serve(addr)
     .await?;
-
   Ok(())
 }
 
 pub async fn start_many_servers(addresses: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
   let mut futures = Vec::new();
-  for i in addresses {
-    let future = start_server(i);
+  for (id, addr) in addresses.clone().into_iter().enumerate() {
+    let future = start_server(id, addr, addresses.clone(), false);
     futures.push(future);
   }
   join_all(futures).await;
-
-  Ok(())
-}
-
-// cargo run --bin ecc-server 0.0.0.0:3001
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-  let args: Vec<String> = env::args().collect();
-
-  let address = args[1].clone();
-  start_server(address).await?;
 
   Ok(())
 }
