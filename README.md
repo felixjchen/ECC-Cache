@@ -1,6 +1,6 @@
 # Distributed-Cache
 Created a in memory key value store, using two strategies:
-1. Replication using Raft
+1. Raft replication
 2. Error Correcting codes using Reed Solomon
 
 ## Assumptions
@@ -9,10 +9,14 @@ Created a in memory key value store, using two strategies:
 ## Todo overall
 - error handling 
 - integration tests
+- benchmarking
+- cleanup logging
 
-## Todo replication
+## Todo raft
 - client
 - Storage hard state
+- bad leader writes
+- 
 
 ## Todo ecc
 - optomistic concurrency writes

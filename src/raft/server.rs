@@ -1,5 +1,5 @@
-use crate::replication::network::TonicgRPCNetwork;
-use crate::replication::storage::{ClientRequest, ClientResponse, MemStore};
+use crate::raft::network::TonicgRPCNetwork;
+use crate::raft::storage::{ClientRequest, ClientResponse, MemStore};
 use anyhow::Result;
 use async_raft::raft::{AppendEntriesRequest, InstallSnapshotRequest, VoteRequest};
 use async_raft::raft::{ClientWriteRequest, Raft};
@@ -117,13 +117,15 @@ impl RaftRpc for RaftRpcService {
     &self,
     request: Request<ClientReadRpcRequest>,
   ) -> Result<Response<ClientReadRpcReply>, Status> {
+    let request = request.into_inner();
+    println!("Got a client_read request: {:?}", request.clone());
+    let key = request.key;
+
     let state_machine = self.storage.read_state_machine().await;
 
-    println!("{:?} ", state_machine);
-    let reply = ClientReadRpcReply {
-      status: serde_json::to_string(&state_machine.kv_store).unwrap(),
-    };
-    Ok(Response::new(reply))
+    Ok(Response::new(ClientReadRpcReply {
+      value: state_machine.kv_store.get(&key).cloned(),
+    }))
   }
 }
 

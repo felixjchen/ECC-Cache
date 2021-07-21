@@ -1,14 +1,14 @@
-mod network;
-mod server;
-mod storage;
+use crate::raft::network;
+use crate::raft::server;
+use crate::raft::storage;
 use async_raft::config::Config;
 use async_raft::{NodeId, Raft};
 use futures::future::join_all;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_raft(// addresses: Vec<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
   let node_ids: [NodeId; 4] = [1, 2, 3, 4];
   let addresses = [
     "0.0.0.0:5001",
@@ -22,19 +22,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     members.insert(id);
     routing_table.insert(id, addresses[i].to_string());
   }
-  println!("{:?} ", members);
-  println!("{:?} ", routing_table);
 
   // Create storages and networks
   let mut networks = HashMap::new();
   let mut storages = HashMap::new();
-  for id in node_ids {
+  for id in node_ids.clone() {
     let network = Arc::new(network::TonicgRPCNetwork::new(routing_table.clone()));
     networks.insert(id, network);
     let storage = Arc::new(storage::MemStore::new(id));
     storages.insert(id, storage);
   }
 
+  // Start rafts
   let mut rafts: HashMap<NodeId, server::MyRaft> = HashMap::new();
   let config = Arc::new(
     Config::build("primary-raft-group".into())
@@ -51,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     rafts.insert(id, raft);
   }
 
-  // intialize
+  // Intialize rafts
   let mut futures = Vec::new();
   for raft in rafts.values() {
     let future = raft.initialize(members.clone());
@@ -59,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   }
   join_all(futures).await;
 
-  // await all servers
+  // Await all servers
   let mut futures = Vec::new();
   for (id, raft) in rafts.into_iter() {
     let future = server::start_server(

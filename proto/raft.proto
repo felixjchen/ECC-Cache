@@ -42,7 +42,8 @@ message ClientWriteRpcReply {
 }
 
 message ClientReadRpcRequest {
+  string key = 1;
 }
 message ClientReadRpcReply {
-  string status = 1;
+  optional string value = 1;
 }
