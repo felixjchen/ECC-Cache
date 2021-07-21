@@ -9,7 +9,6 @@ pub mod raft_proto {
 }
 
 pub struct RaftClient {
-  routing_table: HashMap<NodeId, String>,
   client_table: HashMap<NodeId, Option<RaftRpcClient<Channel>>>,
   last_leader: NodeId,
   n: u64,
@@ -18,7 +17,6 @@ pub struct RaftClient {
 impl RaftClient {
   pub async fn new(node_ids: Vec<NodeId>, addresses: Vec<String>) -> RaftClient {
     let mut client_table = HashMap::new();
-    let mut routing_table = HashMap::new();
     let last_leader = 0;
     let n = client_table.len() as u64;
 
@@ -30,12 +28,10 @@ impl RaftClient {
         _ => None,
       };
       client_table.insert(id.clone(), client);
-      routing_table.insert(id.clone(), addr);
     }
-    println!("{:?} {:?}", client_table, routing_table);
+    // println!("{:?} {:?}", client_table, routing_table);
 
     RaftClient {
-      routing_table,
       client_table,
       last_leader,
       n,
