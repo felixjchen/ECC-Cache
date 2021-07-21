@@ -3,9 +3,7 @@ use crate::ecc::get_ecc_settings;
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
 use ecc_proto::{GetKeysReply, GetKeysRequest, GetReply, GetRequest, SetReply, SetRequest};
 use futures::future::join_all;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::env;
 use tokio::sync::RwLock;
 use tonic::{transport::Server, Request, Response, Status};
 
@@ -26,7 +24,7 @@ impl EccRpcService {
     };
 
     if recover {
-      res.recover().await;
+      res.recover().await?;
     }
     Ok(res)
   }

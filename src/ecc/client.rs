@@ -6,7 +6,6 @@ use futures::stream::FuturesUnordered;
 use reed_solomon_erasure::galois_8::ReedSolomon;
 use simple_error::bail;
 use std::collections::HashMap;
-use std::env;
 use std::str;
 use std::time::Duration;
 use tokio::time::sleep;

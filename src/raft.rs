@@ -5,7 +5,7 @@ pub mod server;
 pub mod storage;
 use async_raft::NodeId;
 
-pub fn get_raft_settings() -> (usize, Vec<NodeId>, Vec<String>) {
+pub fn get_raft_settings() -> (Vec<NodeId>, Vec<String>) {
   let mut settings = config::Config::default();
   settings.merge(config::File::with_name("config")).unwrap();
 
@@ -16,13 +16,11 @@ pub fn get_raft_settings() -> (usize, Vec<NodeId>, Vec<String>) {
     .map(|x| x.to_string())
     .collect::<Vec<String>>();
 
-  let n = settings.get_int("n").unwrap() as usize;
-
   let mut node_ids = Vec::new();
-  for i in 0..n {
+  for i in 0..servers.len() {
     let i = i as NodeId;
     node_ids.push(i);
   }
 
-  (n, node_ids, servers)
+  (node_ids, servers)
 }

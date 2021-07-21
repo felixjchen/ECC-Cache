@@ -95,7 +95,7 @@ impl RaftRpc for RaftRpcService {
     let new_log = ClientRequest { key, value };
     let raft_request = ClientWriteRequest::new(new_log);
     let reply = match self.raft.client_write(raft_request).await {
-      Ok(res) => ClientWriteRpcReply { leader_id: None },
+      Ok(_) => ClientWriteRpcReply { leader_id: None },
       Err(ClientWriteError::ForwardToLeader(_, leader_id)) => ClientWriteRpcReply { leader_id },
       Err(_) => panic!("raft write error"),
     };
@@ -113,7 +113,7 @@ impl RaftRpc for RaftRpcService {
     // Guard stale reads
     let state_machine = self.storage.read_state_machine().await;
     let reply = match self.raft.client_read().await {
-      Ok(res) => ClientReadRpcReply {
+      Ok(_) => ClientReadRpcReply {
         value: state_machine.kv_store.get(&key).cloned(),
         leader_id: None,
       },

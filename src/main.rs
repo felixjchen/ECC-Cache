@@ -1,7 +1,6 @@
 use clap::{App, Arg, SubCommand};
 mod ecc;
 mod raft;
-use async_raft::NodeId;
 use ecc::client::EccClient;
 use ecc::server::{start_many_servers, start_server};
 use simple_error::bail;
@@ -114,9 +113,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   // Raft
   if let Some(matches) = matches.subcommand_matches("raft") {
-    let (n, node_ids, servers) = raft::get_raft_settings();
+    let (node_ids, servers) = raft::get_raft_settings();
     if let Some(matches) = matches.subcommand_matches("server") {
-      if let Some(matches) = matches.subcommand_matches("startAll") {
+      if let Some(_) = matches.subcommand_matches("startAll") {
         raft::raft::start_raft(node_ids.clone(), servers.clone()).await?;
       }
       if let Some(matches) = matches.subcommand_matches("startOne") {
