@@ -96,7 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // ECC Client CLI
     if let Some(matches) = matches.subcommand_matches("client") {
-      let client = EccClient::new(k, n, block_size, servers.clone()).await;
+      let mut client = EccClient::new(k, n, block_size, servers.clone()).await;
       // SET KV
       if let Some(matches) = matches.subcommand_matches("set") {
         let key = matches.value_of("key").unwrap().to_string();

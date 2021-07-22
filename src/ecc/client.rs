@@ -8,6 +8,7 @@ use simple_error::bail;
 use std::collections::HashMap;
 use std::str;
 use std::time::Duration;
+use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tonic::transport::Channel;
 
@@ -24,7 +25,7 @@ pub struct EccClient {
   ecc: reed_solomon_erasure::ReedSolomon<reed_solomon_erasure::galois_8::Field>,
   servers: Vec<String>,
   index_table: HashMap<String, usize>,
-  client_table: HashMap<String, Option<EccRpcClient<Channel>>>,
+  client_table: RwLock<HashMap<String, Option<EccRpcClient<Channel>>>>,
 }
 
 impl EccClient {
@@ -40,6 +41,7 @@ impl EccClient {
       client_table.insert(addr.clone(), client);
       index_table.insert(addr, i);
     }
+    let client_table = RwLock::new(client_table);
     let message_size = k * block_size;
     let codeword_size = n * block_size;
     let ecc = ReedSolomon::new(k, n - k).unwrap();
@@ -57,14 +59,34 @@ impl EccClient {
     }
   }
 
+  async fn get_client(&self, addr: String) -> Option<EccRpcClient<Channel>> {
+    // If dead try to reconnect
+    let mut client_table = self.client_table.write().await;
+    match client_table.get(&addr) {
+      Some(client_option) => match client_option {
+        Some(client) => Some(client.clone()),
+        None => {
+          let client_option = EccRpcClient::connect(format!("http://{}", addr.clone())).await;
+          match client_option {
+            Ok(client) => {
+              client_table.insert(addr.clone(), Some(client.clone()));
+              Some(client)
+            }
+            _ => None,
+          }
+        }
+      },
+      None => None,
+    }
+  }
+
   async fn set_once(
     &self,
     address: String,
     key: String,
     value: String,
   ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("Set {:?} {:?} {:?}", address, key, value);
-    let client = self.client_table.get(&address).map(|c| c.clone()).unwrap();
+    let client = self.get_client(address.clone()).await;
 
     match client {
       Some(mut client) => {
@@ -78,7 +100,11 @@ impl EccClient {
     Ok(())
   }
 
-  pub async fn set(&self, key: String, value: String) -> Result<(), Box<dyn std::error::Error>> {
+  pub async fn set(
+    &mut self,
+    key: String,
+    value: String,
+  ) -> Result<(), Box<dyn std::error::Error>> {
     // convert value to array of bytes "[u8]"
     let mut bytes = value.into_bytes();
 
@@ -124,7 +150,7 @@ impl EccClient {
     address: String,
     key: String,
   ) -> Result<(String, Option<String>), Box<dyn std::error::Error>> {
-    let client = self.client_table.get(&address).map(|c| c.clone()).unwrap();
+    let client = self.get_client(address.clone()).await;
 
     match client {
       Some(mut client) => {
@@ -135,7 +161,7 @@ impl EccClient {
         Ok((address, value))
       }
       _ => {
-        sleep(Duration::from_millis(10)).await;
+        sleep(Duration::from_secs(2)).await;
         bail!("Ignoring {:?} as client could not connect", address)
       }
     }
@@ -145,7 +171,7 @@ impl EccClient {
     &self,
     address: String,
   ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let client = self.client_table.get(&address).map(|c| c.clone()).unwrap();
+    let client = self.get_client(address.clone()).await;
 
     match client {
       Some(mut client) => {
