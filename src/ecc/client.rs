@@ -90,6 +90,7 @@ impl EccClient {
 
     match client {
       Some(mut client) => {
+        println!("Set {:?} {:?} {:?}", address, key, value);
         let request = tonic::Request::new(SetRequest { key, value });
         client.set(request).await?;
       }
