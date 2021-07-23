@@ -1,5 +1,5 @@
 use ecc_proto::ecc_rpc_client::EccRpcClient;
-use ecc_proto::{GetKeysRequest, GetRequest, SetRequest};
+use ecc_proto::{GetKeysRequest, GetRequest, HeartbeatRequest, SetRequest};
 use futures::future::join_all;
 use futures::prelude::*;
 use futures::stream::FuturesUnordered;
@@ -11,6 +11,7 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tonic::transport::Channel;
+use tonic::Request;
 
 pub mod ecc_proto {
   tonic::include_proto!("ecc_proto");
@@ -90,7 +91,7 @@ impl EccClient {
 
     match client {
       Some(mut client) => {
-        let request = tonic::Request::new(SetRequest { key, value });
+        let request = Request::new(SetRequest { key, value });
         client.set(request).await?;
       }
       _ => {
@@ -154,7 +155,7 @@ impl EccClient {
 
     match client {
       Some(mut client) => {
-        let request = tonic::Request::new(GetRequest { key: key.clone() });
+        let request = Request::new(GetRequest { key: key.clone() });
         let response = client.get(request).await?;
         let value = response.into_inner().value;
         println!("Get {:?} {:?} {:?}", address, key, value);
@@ -162,26 +163,6 @@ impl EccClient {
       }
       _ => {
         sleep(Duration::from_secs(2)).await;
-        bail!("Ignoring {:?} as client could not connect", address)
-      }
-    }
-  }
-
-  pub async fn get_keys_once(
-    &self,
-    address: String,
-  ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let client = self.get_client(address.clone()).await;
-
-    match client {
-      Some(mut client) => {
-        let request = tonic::Request::new(GetKeysRequest {});
-        let response = client.get_keys(request).await?;
-        let keys = response.into_inner().keys;
-        let keys: Vec<String> = serde_json::from_str(&keys).unwrap();
-        Ok(keys)
-      }
-      _ => {
         bail!("Ignoring {:?} as client could not connect", address)
       }
     }
@@ -245,5 +226,55 @@ impl EccClient {
       }
       None => Ok(None),
     }
+  }
+
+  pub async fn get_keys_once(
+    &self,
+    address: String,
+  ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let client = self.get_client(address.clone()).await;
+
+    match client {
+      Some(mut client) => {
+        let request = Request::new(GetKeysRequest {});
+        let response = client.get_keys(request).await?;
+        let keys = response.into_inner().keys;
+        let keys: Vec<String> = serde_json::from_str(&keys).unwrap();
+        Ok(keys)
+      }
+      _ => {
+        bail!("Ignoring {:?} as client could not connect", address)
+      }
+    }
+  }
+
+  async fn send_heartbeat(&self, addr: String) -> String {
+    let client = self.get_client(addr.clone()).await;
+
+    match client {
+      Some(mut client) => {
+        let request = Request::new(HeartbeatRequest {});
+        let response = client.heartbeat(request).await.unwrap();
+        let state = response.into_inner().state;
+        state
+      }
+      _ => "NotReady".to_string(),
+    }
+  }
+
+  pub async fn send_heartbeats(&mut self) -> usize {
+    // println!("{:?}", "starting heartbeats");
+    let mut futures = Vec::new();
+    for addr in self.servers.clone() {
+      let future = self.send_heartbeat(addr);
+      futures.push(future)
+    }
+    let res = join_all(futures).await;
+    let res: Vec<String> = res
+      .into_iter()
+      .filter(|x| x.clone() == "Ready".to_string())
+      .collect();
+    // println!("{:?}", res.len());
+    res.len()
   }
 }

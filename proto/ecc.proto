@@ -2,11 +2,19 @@ syntax = "proto3";
 package ecc_proto;
 
 service EccRpc {
+  rpc Heartbeat (HeartbeatRequest) returns (HeartbeatReply);
   rpc Set (SetRequest) returns (SetReply);
   rpc Get (GetRequest) returns (GetReply);
   rpc GetKeys (GetKeysRequest) returns (GetKeysReply);
 }
 
+// Heartbeat
+message HeartbeatRequest {}
+message HeartbeatReply {
+  string state = 1;
+}
+
+// Requests on the kvstore
 message SetRequest {
   string key = 1;
   string value = 2;
@@ -14,14 +22,12 @@ message SetRequest {
 message SetReply {
   string status = 1;
 }
-
 message GetRequest {
   string key = 1;
 }
 message GetReply {
   optional string value = 1;
 }
-
 message GetKeysRequest {
 }
 message GetKeysReply {

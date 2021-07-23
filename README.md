@@ -14,6 +14,7 @@ Created two in memory key value stores, using two strategies:
 - error handling 
 - integration tests
 - benchmarking
+- different configjsons
 - cleanup logging
 
 ## Todo raft
@@ -21,8 +22,10 @@ Created two in memory key value stores, using two strategies:
 - check snapshotting logic
 
 ## Todo ecc
-- optomistic concurrency writes
-- restore (no in flight transactions?)
+- heartbeats
+- 2PC
+- restore (no in flight transactions? yep no in flight, only healthy node with empty WAL)
+- better client naming
 - better timeout
 
 ## Week 1
@@ -66,3 +69,9 @@ Created two in memory key value stores, using two strategies:
           - v
         - get
           - k
+
+## Week 3 (TODO)
+- Choose a testing framework, strategy that can monitor resources and time
+- 2PC + Restore 
+- Raft membership changes
+- Report 

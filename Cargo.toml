@@ -21,6 +21,5 @@ reed-solomon-erasure = { version = "4.0", features = [ "simd-accel" ] }
 simple-error = "0.2.3"
 config = {version = "0.11", features=["json"]}
 
-
 [build-dependencies]
 tonic-build = "0.5"
