@@ -28,6 +28,7 @@ pub struct EccRpcService {
   servers: Vec<String>,
   h: RwLock<usize>,
   state: State,
+  client: RwLock<EccClient>,
 }
 
 impl EccRpcService {
@@ -36,12 +37,15 @@ impl EccRpcService {
     servers: Vec<String>,
     recover: bool,
   ) -> Result<EccRpcService, Box<dyn std::error::Error>> {
+    let (k, n, block_size, servers) = get_ecc_settings();
+    let client = EccClient::new(k, n, block_size, servers.clone()).await;
     let res = EccRpcService {
       id,
       servers,
       h: RwLock::new(0 as usize),
       state: State::Ready,
       storage: RwLock::new(HashMap::new()),
+      client: RwLock::new(client),
     };
 
     if recover {
@@ -54,12 +58,11 @@ impl EccRpcService {
   async fn recover(&self) -> Result<(), Box<dyn std::error::Error>> {
     // TODO: Probably want to recover while no transacations are in flight
     println!("RECOVER for {:?}", self.id);
-    let (k, n, block_size, servers) = get_ecc_settings();
-    let target = (self.id + 1) % servers.len();
+    let target = (self.id + 1) % self.servers.len();
+    let client = self.client.write().await;
 
     // Get all keys to fill
-    let client = EccClient::new(k, n, block_size, servers.clone()).await;
-    let keys = client.get_keys_once(servers[target].clone()).await?;
+    let keys = client.get_keys_once(self.servers[target].clone()).await?;
 
     // Get all values
     let mut storage = self.storage.write().await;
@@ -72,9 +75,7 @@ impl EccRpcService {
   }
 
   async fn get_cluster_status(&self) {
-    let (k, n, block_size, servers) = get_ecc_settings();
-    let mut client = EccClient::new(k, n, block_size, servers.clone()).await;
-
+    let mut client = self.client.write().await;
     let mut h = self.h.write().await;
     *h = client.send_heartbeats().await;
   }

@@ -25,6 +25,7 @@ Created two in memory key value stores, using two strategies:
 - heartbeats
 - 2PC
 - restore (no in flight transactions? yep no in flight, only healthy node with empty WAL)
+- restore needs to crawl all neighboors
 - better client naming
 - better timeout
 

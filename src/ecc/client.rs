@@ -254,9 +254,14 @@ impl EccClient {
     match client {
       Some(mut client) => {
         let request = Request::new(HeartbeatRequest {});
-        let response = client.heartbeat(request).await.unwrap();
-        let state = response.into_inner().state;
-        state
+        let response = client.heartbeat(request).await;
+        match response {
+          Ok(response) => {
+            let state = response.into_inner().state;
+            state
+          }
+          Err(_) => "NotReady".to_string(),
+        }
       }
       _ => "NotReady".to_string(),
     }
