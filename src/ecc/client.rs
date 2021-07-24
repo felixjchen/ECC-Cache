@@ -6,6 +6,7 @@ use futures::stream::FuturesUnordered;
 use reed_solomon_erasure::galois_8::ReedSolomon;
 use simple_error::bail;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::str;
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -248,7 +249,7 @@ impl EccClient {
     }
   }
 
-  async fn send_heartbeat(&self, addr: String) -> String {
+  async fn send_heartbeat(&self, addr: String) -> (String, String) {
     let client = self.get_client(addr.clone()).await;
 
     match client {
@@ -258,28 +259,28 @@ impl EccClient {
         match response {
           Ok(response) => {
             let state = response.into_inner().state;
-            state
+            (state, addr)
           }
-          Err(_) => "NotReady".to_string(),
+          Err(_) => ("NotReady".to_string(), addr),
         }
       }
-      _ => "NotReady".to_string(),
+      _ => ("NotReady".to_string(), addr),
     }
   }
 
-  pub async fn send_heartbeats(&mut self) -> usize {
-    // println!("{:?}", "starting heartbeats");
+  pub async fn send_heartbeats(&mut self) -> HashSet<String> {
     let mut futures = Vec::new();
     for addr in self.servers.clone() {
       let future = self.send_heartbeat(addr);
       futures.push(future)
     }
     let res = join_all(futures).await;
-    let res: Vec<String> = res
-      .into_iter()
-      .filter(|x| x.clone() == "Ready".to_string())
-      .collect();
-    // println!("{:?}", res.len());
-    res.len()
+    let mut healthy_servers = HashSet::new();
+    for (state, addr) in res {
+      if state == "Ready" {
+        healthy_servers.insert(addr);
+      }
+    }
+    healthy_servers
   }
 }

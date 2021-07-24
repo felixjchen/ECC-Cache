@@ -6,7 +6,7 @@ use ecc_proto::{
   SetRequest,
 };
 use futures::future::join_all;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::runtime::Handle;
 use tokio::sync::RwLock;
@@ -26,7 +26,7 @@ pub struct EccRpcService {
   id: usize,
   storage: RwLock<HashMap<String, String>>,
   servers: Vec<String>,
-  h: RwLock<usize>,
+  healthy_servers: RwLock<HashSet<String>>,
   state: State,
   client: RwLock<EccClient>,
 }
@@ -39,10 +39,11 @@ impl EccRpcService {
   ) -> Result<EccRpcService, Box<dyn std::error::Error>> {
     let (k, n, block_size, servers) = get_ecc_settings();
     let client = EccClient::new(k, n, block_size, servers.clone()).await;
+    let healthy_servers = HashSet::new();
     let res = EccRpcService {
       id,
       servers,
-      h: RwLock::new(0 as usize),
+      healthy_servers: RwLock::new(healthy_servers),
       state: State::Ready,
       storage: RwLock::new(HashMap::new()),
       client: RwLock::new(client),
@@ -76,8 +77,18 @@ impl EccRpcService {
 
   async fn get_cluster_status(&self) {
     let mut client = self.client.write().await;
-    let mut h = self.h.write().await;
-    *h = client.send_heartbeats().await;
+    let healthy_servers_new = client.send_heartbeats().await;
+    let mut healthy_servers = self.healthy_servers.write().await;
+
+    // Only if healthy servers changed
+    if healthy_servers
+      .symmetric_difference(&healthy_servers_new)
+      .into_iter()
+      .count()
+      > 0
+    {
+      *healthy_servers = healthy_servers_new;
+    }
   }
 }
 
@@ -152,7 +163,7 @@ pub async fn start_server(
     loop {
       service.get_cluster_status().await;
       sleep(Duration::from_millis(100)).await;
-      println!("{:?}", service.h.read().await);
+      println!("{:?}", service.healthy_servers.read().await);
     }
   });
 
