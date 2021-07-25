@@ -1,10 +1,7 @@
 use crate::ecc::client::EccClient;
-use crate::ecc::get_ecc_settings;
+// use crate::ecc::get_ecc_settings;
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
-use ecc_proto::{
-  GetKeysReply, GetKeysRequest, GetReply, GetRequest, HeartbeatReply, HeartbeatRequest, SetReply,
-  SetRequest,
-};
+use ecc_proto::*;
 use futures::future::join_all;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -22,12 +19,20 @@ enum State {
   NotReady,
 }
 
+// Write ahead log lock
+#[derive(Clone)]
+struct Lock {
+  lock: String,
+  value: String,
+}
+
 pub struct EccRpcService {
   id: usize,
-  storage: RwLock<HashMap<String, String>>,
   servers: Vec<String>,
-  healthy_servers: RwLock<HashSet<String>>,
   state: State,
+  storage: RwLock<HashMap<String, String>>,
+  lock_table: RwLock<HashMap<String, Lock>>,
+  healthy_servers: RwLock<HashSet<String>>,
   client: RwLock<EccClient>,
 }
 
@@ -38,13 +43,13 @@ impl EccRpcService {
     recover: bool,
   ) -> Result<EccRpcService, Box<dyn std::error::Error>> {
     let client = EccClient::new().await;
-    let healthy_servers = HashSet::new();
     let res = EccRpcService {
       id,
       servers,
-      healthy_servers: RwLock::new(healthy_servers),
+      healthy_servers: Default::default(),
       state: State::Ready,
-      storage: RwLock::new(HashMap::new()),
+      storage: Default::default(),
+      lock_table: Default::default(),
       client: RwLock::new(client),
     };
 
@@ -132,12 +137,96 @@ impl EccRpc for Arc<EccRpcService> {
   async fn heartbeat(
     &self,
     request: Request<HeartbeatRequest>,
-  ) -> Result<Response<HeartbeatReply>, tonic::Status> {
+  ) -> Result<Response<HeartbeatReply>, Status> {
     let state = match self.state {
       State::NotReady => "NotReady".to_string(),
       State::Ready => "Ready".to_string(),
     };
     Ok(Response::new(HeartbeatReply { state }))
+  }
+
+  async fn prepare(
+    &self,
+    request: Request<PrepareRequest>,
+  ) -> Result<Response<PrepareReply>, Status> {
+    let request = request.into_inner();
+    println!("Got a prepare request: {:?}", request.clone());
+    let tid = request.tid;
+    let value = request.value;
+    let key = request.key;
+
+    let mut lock_table = self.lock_table.write().await;
+    let healthy_servers = self.healthy_servers.read().await.clone();
+    let healthy_servers = serde_json::to_string(&healthy_servers).unwrap();
+
+    // Grant lock if : 1. Not locked OR 2. TID matches
+    let grant_lock = match lock_table.get(&key) {
+      Some(existing_lock) => {
+        existing_lock.clone().lock == tid && existing_lock.clone().value == value
+      }
+      None => true,
+    };
+
+    if grant_lock {
+      let lock = Lock { lock: tid, value };
+      lock_table.insert(key, lock);
+
+      let reply = PrepareReply {
+        lock_acquired: true,
+        healthy_servers,
+      };
+      Ok(Response::new(reply))
+    } else {
+      let reply = PrepareReply {
+        lock_acquired: false,
+        healthy_servers,
+      };
+      Ok(Response::new(reply))
+    }
+  }
+
+  // Commit transacation to storage
+  async fn commit(&self, request: Request<CommitRequest>) -> Result<Response<CommitReply>, Status> {
+    let request = request.into_inner();
+    println!("Got a commit request: {:?}", request.clone());
+    let tid = request.tid;
+    let key = request.key;
+
+    let mut lock_table = self.lock_table.write().await;
+    let mut storage = self.storage.write().await;
+
+    // insert into kv store
+    let new_value = lock_table.get(&key).unwrap().clone().value;
+    storage.insert(key.clone(), new_value);
+
+    // free lock
+    lock_table.remove(&key);
+
+    let reply = CommitReply { success: true };
+    Ok(Response::new(reply))
+  }
+
+  // Abort new transaction
+  async fn abort(&self, request: Request<AbortRequest>) -> Result<Response<AbortReply>, Status> {
+    let request = request.into_inner();
+    println!("Got an abort request: {:?}", request.clone());
+    let tid = request.tid;
+    let key = request.key;
+
+    let mut lock_table = self.lock_table.write().await;
+    let can_abort = match lock_table.get(&key) {
+      Some(existing_lock) => existing_lock.clone().lock == tid,
+      None => false,
+    };
+
+    if can_abort {
+      lock_table.remove(&key);
+      let reply = AbortReply { success: true };
+      Ok(Response::new(reply))
+    } else {
+      let reply = AbortReply { success: false };
+      Ok(Response::new(reply))
+    }
   }
 }
 

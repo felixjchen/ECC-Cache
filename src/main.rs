@@ -103,7 +103,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       if let Some(matches) = matches.subcommand_matches("set") {
         let key = matches.value_of("key").unwrap().to_string();
         let value = matches.value_of("value").unwrap().to_string();
-        client.set(key, value).await?;
+        client.two_phase_commit(key, value).await?;
       }
       // GET K
       if let Some(matches) = matches.subcommand_matches("get") {

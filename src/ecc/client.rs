@@ -1,6 +1,6 @@
 use crate::ecc::get_ecc_settings;
 use ecc_proto::ecc_rpc_client::EccRpcClient;
-use ecc_proto::{GetKeysRequest, GetRequest, HeartbeatRequest, SetRequest};
+use ecc_proto::*;
 use futures::future::join_all;
 use futures::prelude::*;
 use futures::stream::FuturesUnordered;
@@ -14,6 +14,7 @@ use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tonic::transport::Channel;
 use tonic::Request;
+use uuid::Uuid;
 
 pub mod ecc_proto {
   tonic::include_proto!("ecc_proto");
@@ -186,6 +187,7 @@ impl EccClient {
 
     // Empty codeword
     let mut codeword: Vec<Option<Vec<u8>>> = vec![None; self.n];
+    println!("{:?}", first_k);
 
     // Fill in codeword
     let mut all_none = true;
@@ -196,6 +198,7 @@ impl EccClient {
           all_none = all_none && result.is_none();
           // Get server index
           let i = self.index_table.get(&addr).unwrap().clone();
+          println!("{:?}", result);
           // String to vec of u8
           let result: Option<Vec<u8>> = result.map(|x| serde_json::from_str(&x).unwrap());
           codeword[i] = result;
@@ -284,5 +287,159 @@ impl EccClient {
       }
     }
     healthy_servers
+  }
+
+  pub async fn two_phase_commit(
+    &self,
+    key: String,
+    value: String,
+  ) -> Result<(), Box<dyn std::error::Error>> {
+    let tid = Uuid::new_v4().to_string();
+    println!("Beginning 2pc for {:?} {:?} {:?}", tid, key, value);
+    let mut bytes = value.into_bytes();
+
+    // too long ...
+    if bytes.len() > self.message_size.into() {
+      bail!(
+        "message too long, {:?} larger then {:?}",
+        bytes.len(),
+        self.message_size
+      );
+    } else {
+      // pad with zeros
+      let pad_size = self.codeword_size - bytes.len();
+      let mut pad = vec![0; pad_size];
+      bytes.append(&mut pad);
+
+      // chunk into vec of vecs
+      let mut codeword: Vec<Vec<u8>> = bytes.chunks(self.block_size).map(|x| x.to_vec()).collect();
+
+      // calculate parity
+      self.ecc.encode(&mut codeword).unwrap();
+
+      // map to strings
+      let codeword: Vec<String> = codeword
+        .into_iter()
+        .map(|x| serde_json::to_string(&x).unwrap())
+        .collect();
+
+      // Prepare, try to acquire H >= k locks, make sure the healthy server clique is agreed upon
+      let mut futures = Vec::new();
+      for (i, addr) in self.servers.iter().enumerate() {
+        let future = self.send_prepare(addr.clone(), tid.clone(), key.clone(), codeword[i].clone());
+        futures.push(future)
+      }
+      let res = join_all(futures).await;
+
+      // Clique matches and all locks acquired
+      // Acquired >= k locks
+      let mut clique = true;
+      let mut all_healthy_servers: HashSet<String> = HashSet::new();
+      let mut first_healthy_servers = true;
+      let mut all_locks_acquired = true;
+      let mut num_locks_acquired = 0;
+      for i in res {
+        match i {
+          Err(_) => (),
+          Ok((healthy_servers, locks_acquired)) => {
+            if first_healthy_servers {
+              all_healthy_servers = healthy_servers.clone();
+              first_healthy_servers = false;
+            }
+
+            clique = clique && (all_healthy_servers == healthy_servers);
+            all_locks_acquired = all_locks_acquired && locks_acquired;
+            if locks_acquired {
+              num_locks_acquired += 1
+            };
+          }
+        }
+      }
+
+      let go_commit = clique && num_locks_acquired >= self.k && all_locks_acquired;
+      println!("Can commit {:?}", go_commit);
+
+      if go_commit {
+        let mut futures = Vec::new();
+        for addr in self.servers.clone() {
+          let future = self.send_commit(addr.clone(), tid.clone(), key.clone());
+          futures.push(future);
+        }
+        let res = join_all(futures).await;
+        println!("{:?}", res);
+      } else {
+        let mut futures = Vec::new();
+        for addr in self.servers.clone() {
+          let future = self.send_abort(addr.clone(), tid.clone(), key.clone());
+          futures.push(future);
+        }
+        let res = join_all(futures).await;
+        println!("{:?}", res);
+      }
+      Ok(())
+    }
+  }
+
+  async fn send_prepare(
+    &self,
+    addr: String,
+    tid: String,
+    key: String,
+    value: String,
+  ) -> Result<(HashSet<String>, bool), Box<dyn std::error::Error>> {
+    let client = self.get_client(addr.clone()).await;
+    match client {
+      Some(mut client) => {
+        let request = Request::new(PrepareRequest { tid, key, value });
+        let response = client.prepare(request).await?.into_inner();
+        let lock_acquired = response.lock_acquired;
+        let healthy_servers = response.healthy_servers;
+        let healthy_servers: HashSet<String> = serde_json::from_str(&healthy_servers).unwrap();
+        Ok((healthy_servers, lock_acquired))
+      }
+      _ => {
+        bail!("Ignoring {:?} as client could not connect", addr)
+      }
+    }
+  }
+
+  async fn send_commit(
+    &self,
+    addr: String,
+    tid: String,
+    key: String,
+  ) -> Result<bool, Box<dyn std::error::Error>> {
+    let client = self.get_client(addr.clone()).await;
+    match client {
+      Some(mut client) => {
+        let request = Request::new(CommitRequest { key, tid });
+        let response = client.commit(request).await?.into_inner();
+        let success = response.success;
+        Ok(success)
+      }
+      _ => {
+        bail!("Ignoring {:?} as client could not connect", addr)
+      }
+    }
+  }
+
+  async fn send_abort(
+    &self,
+    addr: String,
+    tid: String,
+    key: String,
+  ) -> Result<bool, Box<dyn std::error::Error>> {
+    let client = self.get_client(addr.clone()).await;
+    match client {
+      Some(mut client) => {
+        let request = Request::new(AbortRequest { key, tid });
+        let response = client.abort(request).await?.into_inner();
+        let success = response.success;
+        Ok(success)
+      }
+      _ => {
+        bail!("Ignoring {:?} as client could not connect", addr)
+      }
+    }
   }
 }

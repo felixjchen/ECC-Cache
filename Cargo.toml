@@ -20,6 +20,8 @@ clap = "2.33.3"
 reed-solomon-erasure = { version = "4.0", features = [ "simd-accel" ] }
 simple-error = "0.2.3"
 config = {version = "0.11", features=["json"]}
+uuid = { version = "0.8", features = [ "v4"] }
+
 
 [build-dependencies]
 tonic-build = "0.5"
