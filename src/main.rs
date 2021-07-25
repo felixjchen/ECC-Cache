@@ -77,19 +77,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   // ECC
   if let Some(matches) = matches.subcommand_matches("ecc") {
     // Read ecc settings from config.json
-    let (k, n, block_size, servers) = ecc::get_ecc_settings();
+    let (k, n, heartbeat_timeout_ms, block_size, servers) = ecc::get_ecc_settings();
     // ECC Server CLI
     if let Some(matches) = matches.subcommand_matches("server") {
       // Start all ECC servers
       if let Some(_) = matches.subcommand_matches("startAll") {
-        start_many_servers(servers.clone()).await?;
+        start_many_servers(servers.clone(), heartbeat_timeout_ms).await?;
       }
       // Start one ECC server node during restore
       if let Some(matches) = matches.subcommand_matches("startOne") {
         let addr = matches.value_of("address").unwrap().to_string();
         let recover = matches.value_of("recover").unwrap().to_string() == "recover";
         match servers.iter().position(|i| i.clone() == addr) {
-          Some(id) => start_server(id, addr, servers.clone(), recover).await?,
+          Some(id) => {
+            start_server(id, addr, servers.clone(), heartbeat_timeout_ms, recover).await?
+          }
           None => bail!("server address not found in config"),
         }
       }

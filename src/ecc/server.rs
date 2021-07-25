@@ -37,7 +37,7 @@ impl EccRpcService {
     servers: Vec<String>,
     recover: bool,
   ) -> Result<EccRpcService, Box<dyn std::error::Error>> {
-    let (k, n, block_size, servers) = get_ecc_settings();
+    let (k, n, heartbeat_timeout_ms, block_size, servers) = get_ecc_settings();
     let client = EccClient::new(k, n, block_size, servers.clone()).await;
     let healthy_servers = HashSet::new();
     let res = EccRpcService {
@@ -146,6 +146,7 @@ pub async fn start_server(
   id: usize,
   addr: String,
   servers: Vec<String>,
+  heartbeat_timeout_ms: usize,
   recover: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let addr = addr.parse().unwrap();
@@ -162,7 +163,7 @@ pub async fn start_server(
   handle.spawn(async move {
     loop {
       service.get_cluster_status().await;
-      sleep(Duration::from_millis(100)).await;
+      sleep(Duration::from_millis(heartbeat_timeout_ms as u64)).await;
       println!("{:?}", service.healthy_servers.read().await);
     }
   });
@@ -171,10 +172,13 @@ pub async fn start_server(
   Ok(())
 }
 
-pub async fn start_many_servers(servers: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_many_servers(
+  servers: Vec<String>,
+  heartbeat_timeout_ms: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
   let mut futures = Vec::new();
   for (id, addr) in servers.clone().into_iter().enumerate() {
-    let future = start_server(id, addr, servers.clone(), false);
+    let future = start_server(id, addr, servers.clone(), heartbeat_timeout_ms, false);
     futures.push(future);
   }
   join_all(futures).await;
