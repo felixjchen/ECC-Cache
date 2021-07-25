@@ -1,3 +1,4 @@
+use crate::ecc::get_ecc_settings;
 use ecc_proto::ecc_rpc_client::EccRpcClient;
 use ecc_proto::{GetKeysRequest, GetRequest, HeartbeatRequest, SetRequest};
 use futures::future::join_all;
@@ -31,7 +32,8 @@ pub struct EccClient {
 }
 
 impl EccClient {
-  pub async fn new(k: usize, n: usize, block_size: usize, servers: Vec<String>) -> EccClient {
+  pub async fn new() -> EccClient {
+    let (k, n, heartbeat_timeout_ms, block_size, servers) = get_ecc_settings();
     let mut client_table = HashMap::new();
     let mut index_table = HashMap::new();
     for (i, addr) in servers.clone().into_iter().enumerate() {

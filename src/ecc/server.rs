@@ -37,8 +37,7 @@ impl EccRpcService {
     servers: Vec<String>,
     recover: bool,
   ) -> Result<EccRpcService, Box<dyn std::error::Error>> {
-    let (k, n, heartbeat_timeout_ms, block_size, servers) = get_ecc_settings();
-    let client = EccClient::new(k, n, block_size, servers.clone()).await;
+    let client = EccClient::new().await;
     let healthy_servers = HashSet::new();
     let res = EccRpcService {
       id,
