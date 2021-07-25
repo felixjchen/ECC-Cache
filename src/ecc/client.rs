@@ -85,71 +85,6 @@ impl EccClient {
     }
   }
 
-  async fn set_once(
-    &self,
-    address: String,
-    key: String,
-    value: String,
-  ) -> Result<(), Box<dyn std::error::Error>> {
-    let client = self.get_client(address.clone()).await;
-
-    match client {
-      Some(mut client) => {
-        let request = Request::new(SetRequest { key, value });
-        client.set(request).await?;
-      }
-      _ => {
-        println!("Ignoring {:?} as client could not connect", address)
-      }
-    }
-    Ok(())
-  }
-
-  pub async fn set(
-    &mut self,
-    key: String,
-    value: String,
-  ) -> Result<(), Box<dyn std::error::Error>> {
-    // convert value to array of bytes "[u8]"
-    let mut bytes = value.into_bytes();
-
-    // too long ...
-    if bytes.len() > self.message_size.into() {
-      bail!(
-        "message too long, {:?} larger then {:?}",
-        bytes.len(),
-        self.message_size
-      )
-    } else {
-      // pad with zeros
-      let pad_size = self.codeword_size - bytes.len();
-      let mut pad = vec![0; pad_size];
-      bytes.append(&mut pad);
-
-      // chunk into vec of vecs
-      let mut codeword: Vec<Vec<u8>> = bytes.chunks(self.block_size).map(|x| x.to_vec()).collect();
-
-      // calculate parity
-      self.ecc.encode(&mut codeword).unwrap();
-
-      // map to strings
-      let codeword: Vec<String> = codeword
-        .into_iter()
-        .map(|x| serde_json::to_string(&x).unwrap())
-        .collect();
-
-      // Create futures and send to all nodes
-      let mut futures = Vec::new();
-      for (i, addr) in self.servers.iter().enumerate() {
-        let future = self.set_once(addr.clone(), key.clone(), codeword[i].clone());
-        futures.push(future);
-      }
-      join_all(futures).await;
-
-      Ok(())
-    }
-  }
-
   async fn get_once(
     &self,
     address: String,
@@ -366,7 +301,7 @@ impl EccClient {
           futures.push(future);
         }
         let res = join_all(futures).await;
-        println!("{:?}", res);
+        println!("COMMITED {:?}", res);
       } else {
         let mut futures = Vec::new();
         for addr in self.servers.clone() {
@@ -374,7 +309,7 @@ impl EccClient {
           futures.push(future);
         }
         let res = join_all(futures).await;
-        println!("{:?}", res);
+        println!("ABORTED {:?}", res);
       }
       Ok(())
     }

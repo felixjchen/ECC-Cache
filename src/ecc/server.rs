@@ -98,21 +98,6 @@ impl EccRpcService {
 
 #[tonic::async_trait]
 impl EccRpc for Arc<EccRpcService> {
-  async fn set(&self, request: Request<SetRequest>) -> Result<Response<SetReply>, Status> {
-    let request = request.into_inner();
-    println!("Got a set request: {:?}", request.clone());
-    let key = request.key;
-    let value = request.value;
-
-    let mut storage = self.storage.write().await;
-    storage.insert(key, value);
-
-    let reply = SetReply {
-      status: "success".into(),
-    };
-
-    Ok(Response::new(reply))
-  }
   async fn get(&self, request: Request<GetRequest>) -> Result<Response<GetReply>, Status> {
     let request = request.into_inner();
     println!("Got a get request: {:?}", request.clone());

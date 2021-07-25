@@ -3,7 +3,6 @@ package ecc_proto;
 
 service EccRpc {
   rpc Heartbeat (HeartbeatRequest) returns (HeartbeatReply);
-  rpc Set (SetRequest) returns (SetReply);
   rpc Prepare (PrepareRequest) returns (PrepareReply);
   rpc Commit (CommitRequest) returns (CommitReply);
   rpc Abort (AbortRequest) returns (AbortReply);
@@ -43,14 +42,6 @@ message AbortReply {
 }
 
 
-// Requests on the kvstore
-message SetRequest {
-  string key = 1;
-  string value = 2;
-}
-message SetReply {
-  string status = 1;
-}
 
 message GetRequest {
   string key = 1;
