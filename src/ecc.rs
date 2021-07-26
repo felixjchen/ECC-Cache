@@ -1,5 +1,6 @@
 pub mod client;
 pub mod server;
+pub type StdError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 pub fn get_ecc_settings() -> (usize, usize, usize, usize, Vec<String>) {
   let mut settings = config::Config::default();

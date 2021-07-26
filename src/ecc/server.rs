@@ -1,5 +1,5 @@
 use crate::ecc::client::EccClient;
-// use crate::ecc::get_ecc_settings;
+use crate::ecc::StdError;
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
 use ecc_proto::*;
 use futures::future::join_all;
@@ -41,26 +41,26 @@ impl EccRpcService {
     id: usize,
     servers: Vec<String>,
     recover: bool,
-  ) -> Result<EccRpcService, Box<dyn std::error::Error>> {
+  ) -> Result<EccRpcService, StdError> {
     let client = EccClient::new().await;
     let res = EccRpcService {
       id,
       servers,
       healthy_servers: Default::default(),
-      state: State::Ready,
+      state: if !recover { State::Ready } else { State::Ready },
       storage: Default::default(),
       lock_table: Default::default(),
       client: RwLock::new(client),
     };
 
-    if recover {
-      res.recover().await?;
-    }
+    // if recover {
+    //   res.recover().await?;
+    // }
 
     Ok(res)
   }
 
-  async fn recover(&self) -> Result<(), Box<dyn std::error::Error>> {
+  async fn recover(&self) -> Result<(), StdError> {
     // TODO: Probably want to recover while no transacations are in flight
     println!("RECOVER for {:?}", self.id);
     let target = (self.id + 1) % self.servers.len();
@@ -221,7 +221,7 @@ pub async fn start_server(
   servers: Vec<String>,
   heartbeat_timeout_ms: usize,
   recover: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), StdError> {
   let addr = addr.parse().unwrap();
   let service = EccRpcService::new(id, servers, recover).await?;
   println!("Starting ecc cache node at {:?}", addr);
@@ -235,8 +235,8 @@ pub async fn start_server(
   let handle = Handle::current();
   handle.spawn(async move {
     loop {
-      service.get_cluster_status().await;
       sleep(Duration::from_millis(heartbeat_timeout_ms as u64)).await;
+      service.get_cluster_status().await;
       println!("{:?}", service.healthy_servers.read().await);
     }
   });
@@ -248,7 +248,7 @@ pub async fn start_server(
 pub async fn start_many_servers(
   servers: Vec<String>,
   heartbeat_timeout_ms: usize,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), StdError> {
   let mut futures = Vec::new();
   for (id, addr) in servers.clone().into_iter().enumerate() {
     let future = start_server(id, addr, servers.clone(), heartbeat_timeout_ms, false);

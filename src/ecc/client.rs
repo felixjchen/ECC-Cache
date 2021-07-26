@@ -1,4 +1,4 @@
-use crate::ecc::get_ecc_settings;
+use crate::ecc::{get_ecc_settings, StdError};
 use ecc_proto::ecc_rpc_client::EccRpcClient;
 use ecc_proto::*;
 use futures::future::join_all;
@@ -89,7 +89,7 @@ impl EccClient {
     &self,
     address: String,
     key: String,
-  ) -> Result<(String, Option<String>), Box<dyn std::error::Error>> {
+  ) -> Result<(String, Option<String>), StdError> {
     let client = self.get_client(address.clone()).await;
 
     match client {
@@ -107,10 +107,7 @@ impl EccClient {
     }
   }
 
-  pub async fn get_codeword(
-    &self,
-    key: String,
-  ) -> Result<Option<Vec<Vec<u8>>>, Box<dyn std::error::Error>> {
+  pub async fn get_codeword(&self, key: String) -> Result<Option<Vec<Vec<u8>>>, StdError> {
     // Get first k responses
     let mut futures = Vec::new();
     for addr in self.servers.clone() {
@@ -152,7 +149,7 @@ impl EccClient {
     Ok(Some(codeword))
   }
 
-  pub async fn get(&self, key: String) -> Result<Option<String>, Box<dyn std::error::Error>> {
+  pub async fn get(&self, key: String) -> Result<Option<String>, StdError> {
     match self.get_codeword(key).await? {
       Some(codeword) => {
         // Process into string
@@ -169,10 +166,7 @@ impl EccClient {
     }
   }
 
-  pub async fn get_keys_once(
-    &self,
-    address: String,
-  ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+  pub async fn get_keys_once(&self, address: String) -> Result<Vec<String>, StdError> {
     let client = self.get_client(address.clone()).await;
 
     match client {
@@ -224,11 +218,7 @@ impl EccClient {
     healthy_servers
   }
 
-  pub async fn two_phase_commit(
-    &self,
-    key: String,
-    value: String,
-  ) -> Result<(), Box<dyn std::error::Error>> {
+  pub async fn two_phase_commit(&self, key: String, value: String) -> Result<(), StdError> {
     let tid = Uuid::new_v4().to_string();
     println!("Beginning 2pc for {:?} {:?} {:?}", tid, key, value);
     let mut bytes = value.into_bytes();
@@ -321,7 +311,7 @@ impl EccClient {
     tid: String,
     key: String,
     value: String,
-  ) -> Result<(HashSet<String>, bool), Box<dyn std::error::Error>> {
+  ) -> Result<(HashSet<String>, bool), StdError> {
     let client = self.get_client(addr.clone()).await;
     match client {
       Some(mut client) => {
@@ -338,12 +328,7 @@ impl EccClient {
     }
   }
 
-  async fn send_commit(
-    &self,
-    addr: String,
-    tid: String,
-    key: String,
-  ) -> Result<bool, Box<dyn std::error::Error>> {
+  async fn send_commit(&self, addr: String, tid: String, key: String) -> Result<bool, StdError> {
     let client = self.get_client(addr.clone()).await;
     match client {
       Some(mut client) => {
@@ -358,12 +343,7 @@ impl EccClient {
     }
   }
 
-  async fn send_abort(
-    &self,
-    addr: String,
-    tid: String,
-    key: String,
-  ) -> Result<bool, Box<dyn std::error::Error>> {
+  async fn send_abort(&self, addr: String, tid: String, key: String) -> Result<bool, StdError> {
     let client = self.get_client(addr.clone()).await;
     match client {
       Some(mut client) => {
