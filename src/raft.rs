@@ -7,7 +7,9 @@ use async_raft::NodeId;
 
 pub fn get_raft_settings() -> (Vec<NodeId>, Vec<String>) {
   let mut settings = config::Config::default();
-  settings.merge(config::File::with_name("config")).unwrap();
+  settings
+    .merge(config::File::with_name("raft_config"))
+    .unwrap();
 
   let servers = settings
     .get_array("servers")

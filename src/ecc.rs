@@ -4,7 +4,9 @@ pub type StdError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 pub fn get_ecc_settings() -> (usize, usize, usize, usize, Vec<String>) {
   let mut settings = config::Config::default();
-  settings.merge(config::File::with_name("config")).unwrap();
+  settings
+    .merge(config::File::with_name("ecc_config"))
+    .unwrap();
 
   let servers = settings
     .get_array("servers")

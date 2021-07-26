@@ -42,9 +42,7 @@ impl RaftRpc for RaftRpcService {
 
     let entries = deserialized.entries.clone();
 
-    if entries.len() > 0 {
-      println!("Got a append_entries request: {:?}", deserialized);
-    }
+    println!("Got a append_entries request: {:?}", deserialized);
 
     let response = self.raft.append_entries(deserialized).await.unwrap();
     let reply = AppendEntriesRpcReply {

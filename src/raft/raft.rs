@@ -8,14 +8,45 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 pub async fn start_raft(
+  id: u64,
   node_ids: Vec<NodeId>,
-  addresses: Vec<String>,
+  servers: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let mut members = HashSet::new();
   let mut routing_table = HashMap::new();
   for (i, &id) in node_ids.iter().enumerate() {
     members.insert(id);
-    routing_table.insert(id, addresses[i].to_string());
+    routing_table.insert(id, servers[i].to_string());
+  }
+
+  let network = Arc::new(network::TonicgRPCNetwork::new(routing_table.clone()));
+  let storage = Arc::new(storage::MemStore::new(id));
+  let config = Arc::new(
+    Config::build("primary-raft-group".into())
+      .validate()
+      .expect("failed to build Raft config"),
+  );
+
+  let raft = Raft::new(id, config.clone(), network.clone(), storage.clone());
+  raft.initialize(members.clone()).await?;
+  server::start_server(
+    raft,
+    storage.clone(),
+    routing_table.get(&id).unwrap().clone(),
+  )
+  .await?;
+  Ok(())
+}
+
+pub async fn start_rafts(
+  node_ids: Vec<NodeId>,
+  servers: Vec<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+  let mut members = HashSet::new();
+  let mut routing_table = HashMap::new();
+  for (i, &id) in node_ids.iter().enumerate() {
+    members.insert(id);
+    routing_table.insert(id, servers[i].to_string());
   }
 
   // Create storages and networks

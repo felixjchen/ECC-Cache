@@ -54,7 +54,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           SubCommand::with_name("server")
             .about("Raft Cache Server")
             .subcommand(SubCommand::with_name("startAll").about("Starts a n node raft kv cache"))
-            .subcommand(SubCommand::with_name("startOne").about("Add a new raft member")),
+            .subcommand(
+              SubCommand::with_name("startOne")
+                .about("Add a new raft member")
+                .arg(Arg::with_name("id").help("i").required(true).index(1)),
+            ),
         )
         .subcommand(
           SubCommand::with_name("client")
@@ -120,12 +124,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (node_ids, servers) = raft::get_raft_settings();
     if let Some(matches) = matches.subcommand_matches("server") {
       if let Some(_) = matches.subcommand_matches("startAll") {
-        raft::raft::start_raft(node_ids.clone(), servers.clone())
-          .await
-          .unwrap();
+        raft::raft::start_rafts(node_ids.clone(), servers.clone()).await?;
       }
       if let Some(matches) = matches.subcommand_matches("startOne") {
-        unimplemented!("TODO");
+        let id = matches.value_of("id").unwrap().to_string();
+        raft::raft::start_raft(
+          id.parse::<u64>().unwrap(),
+          node_ids.clone(),
+          servers.clone(),
+        )
+        .await?;
       }
     }
     if let Some(matches) = matches.subcommand_matches("client") {
