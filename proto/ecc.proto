@@ -2,18 +2,46 @@ syntax = "proto3";
 package ecc_proto;
 
 service EccRpc {
-  rpc Set (SetRequest) returns (SetReply);
+  rpc Heartbeat (HeartbeatRequest) returns (HeartbeatReply);
+  rpc Prepare (PrepareRequest) returns (PrepareReply);
+  rpc Commit (CommitRequest) returns (CommitReply);
+  rpc Abort (AbortRequest) returns (AbortReply);
   rpc Get (GetRequest) returns (GetReply);
   rpc GetKeys (GetKeysRequest) returns (GetKeysReply);
 }
 
-message SetRequest {
+// Heartbeat
+message HeartbeatRequest {}
+message HeartbeatReply {
+  string state = 1;
+}
+
+// TPC 
+message PrepareRequest {
   string key = 1;
   string value = 2;
+  string tid = 3;
 }
-message SetReply {
-  string status = 1;
+message PrepareReply {
+  string healthy_servers = 1;
+  bool lock_acquired = 2;
 }
+message CommitRequest {
+  string tid = 1;
+  string key = 2;
+}
+message CommitReply {
+  bool success = 1;
+}
+message AbortRequest {
+  string tid = 1;
+  string key = 2;
+}
+message AbortReply {
+  bool success = 1;
+}
+
+
 
 message GetRequest {
   string key = 1;
@@ -21,9 +49,8 @@ message GetRequest {
 message GetReply {
   optional string value = 1;
 }
-
 message GetKeysRequest {
 }
 message GetKeysReply {
-  string keys = 1;
+  optional string keys = 1;
 }

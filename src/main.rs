@@ -77,36 +77,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   // ECC
   if let Some(matches) = matches.subcommand_matches("ecc") {
     // Read ecc settings from config.json
-    let (k, n, block_size, servers) = ecc::get_ecc_settings();
+    let (k, n, heartbeat_timeout_ms, block_size, servers) = ecc::get_ecc_settings();
     // ECC Server CLI
     if let Some(matches) = matches.subcommand_matches("server") {
       // Start all ECC servers
       if let Some(_) = matches.subcommand_matches("startAll") {
-        start_many_servers(servers.clone()).await?;
+        start_many_servers(servers.clone(), heartbeat_timeout_ms)
+          .await
+          .unwrap();
       }
       // Start one ECC server node during restore
       if let Some(matches) = matches.subcommand_matches("startOne") {
         let addr = matches.value_of("address").unwrap().to_string();
         let recover = matches.value_of("recover").unwrap().to_string() == "recover";
         match servers.iter().position(|i| i.clone() == addr) {
-          Some(id) => start_server(id, addr, recover).await?,
+          Some(id) => start_server(id, addr, servers.clone(), heartbeat_timeout_ms, recover)
+            .await
+            .unwrap(),
           None => bail!("server address not found in config"),
         }
       }
     }
     // ECC Client CLI
     if let Some(matches) = matches.subcommand_matches("client") {
-      let mut client = EccClient::new(k, n, block_size, servers.clone()).await;
+      let mut client = EccClient::new().await;
       // SET KV
       if let Some(matches) = matches.subcommand_matches("set") {
         let key = matches.value_of("key").unwrap().to_string();
         let value = matches.value_of("value").unwrap().to_string();
-        client.set(key, value).await?;
+        client.two_phase_commit(key, value).await.unwrap();
       }
       // GET K
       if let Some(matches) = matches.subcommand_matches("get") {
         let key = matches.value_of("key").unwrap().to_string();
-        println!("{:?}", client.get(key).await?);
+        println!("{:?}", client.get(key).await.unwrap());
       }
     }
   }
@@ -116,7 +120,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (node_ids, servers) = raft::get_raft_settings();
     if let Some(matches) = matches.subcommand_matches("server") {
       if let Some(_) = matches.subcommand_matches("startAll") {
-        raft::raft::start_raft(node_ids.clone(), servers.clone()).await?;
+        raft::raft::start_raft(node_ids.clone(), servers.clone())
+          .await
+          .unwrap();
       }
       if let Some(matches) = matches.subcommand_matches("startOne") {
         unimplemented!("TODO");
@@ -128,15 +134,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       if let Some(matches) = matches.subcommand_matches("set") {
         let key = matches.value_of("key").unwrap().to_string();
         let value = matches.value_of("value").unwrap().to_string();
-        client.set(key, value).await?;
+        client.set(key, value).await.unwrap();
       }
       // GET K
       if let Some(matches) = matches.subcommand_matches("get") {
         let key = matches.value_of("key").unwrap().to_string();
-        println!("{:?}", client.get(key).await?);
+        println!("{:?}", client.get(key).await.unwrap());
       }
     }
-  }
+  };
 
   Ok(())
 }
