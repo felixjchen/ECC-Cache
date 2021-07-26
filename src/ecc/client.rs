@@ -169,7 +169,6 @@ impl EccClient {
   pub async fn get_keys_once(&self, address: String) -> Result<Option<Vec<String>>, StdError> {
     let client = self.get_client(address.clone()).await;
 
-    println!(" {:?} ", client);
     match client {
       Some(mut client) => {
         let request = Request::new(GetKeysRequest {});

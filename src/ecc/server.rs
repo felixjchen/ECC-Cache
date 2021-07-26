@@ -1,5 +1,5 @@
 use crate::ecc::client::EccClient;
-use crate::ecc::StdError;
+use crate::ecc::{get_ecc_settings, StdError};
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
 use ecc_proto::*;
 use futures::future::join_all;
@@ -14,7 +14,7 @@ pub mod ecc_proto {
   tonic::include_proto!("ecc_proto");
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 enum State {
   Ready,
   NotReady,
@@ -29,6 +29,7 @@ struct Lock {
 
 pub struct EccRpcService {
   id: usize,
+  k: usize,
   servers: Vec<String>,
   state: RwLock<State>,
   storage: RwLock<HashMap<String, String>>,
@@ -43,6 +44,7 @@ impl EccRpcService {
     servers: Vec<String>,
     recover: bool,
   ) -> Result<EccRpcService, StdError> {
+    let (k, n, heartbeat_timeout_ms, block_size, servers) = get_ecc_settings();
     let client = EccClient::new().await;
     let state = if !recover {
       State::Ready
@@ -51,6 +53,7 @@ impl EccRpcService {
     };
     let res = EccRpcService {
       id,
+      k,
       servers,
       healthy_servers: Default::default(),
       state: RwLock::new(state),
@@ -70,9 +73,16 @@ impl EccRpcService {
     *state = newState;
   }
 
+  async fn drain(&self) {
+    let mut storage = self.storage.write().await;
+    storage.drain();
+
+    let mut lock_table = self.lock_table.write().await;
+    lock_table.drain();
+  }
+
   async fn recover(&self) -> Result<(), StdError> {
     // TODO: Probably want to recover while no transacations are in flight
-    println!("RECOVER for {:?}", self.id);
     let client = self.client.write().await;
 
     // Get all keys to fill
@@ -81,6 +91,11 @@ impl EccRpcService {
     let mut found_keys = false;
 
     while !found_keys {
+      println!(
+        "RECOVER for {:?} target {:?}",
+        self.id,
+        self.servers[target].clone()
+      );
       let keys_option = client.get_keys_once(self.servers[target].clone()).await?;
       match keys_option {
         Some(keys) => {
@@ -120,6 +135,14 @@ impl EccRpcService {
       .count()
       > 0
     {
+      if healthy_servers_new.len() < self.k {
+        println!(
+          "{:?} has too few peers and is now outdated, discarding everything",
+          self.id
+        );
+        self.set_state(State::NotReady).await;
+        self.drain().await;
+      }
       *healthy_servers = healthy_servers_new;
     }
   }
@@ -273,8 +296,9 @@ pub async fn start_server(
   handle.spawn(async move {
     loop {
       sleep(Duration::from_millis(heartbeat_timeout_ms as u64)).await;
-      // let state;
+
       let state = service.get_state().await;
+      println!("{:?}", state);
       if state == State::Ready {
         service.get_cluster_status().await;
       } else {
