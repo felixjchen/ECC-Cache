@@ -14,13 +14,14 @@ pub mod ecc_proto {
   tonic::include_proto!("ecc_proto");
 }
 
+#[derive(Clone, PartialEq)]
 enum State {
   Ready,
   NotReady,
 }
 
 // Write ahead log lock
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Lock {
   lock: String,
   value: String,
@@ -29,7 +30,7 @@ struct Lock {
 pub struct EccRpcService {
   id: usize,
   servers: Vec<String>,
-  state: State,
+  state: RwLock<State>,
   storage: RwLock<HashMap<String, String>>,
   lock_table: RwLock<HashMap<String, Lock>>,
   healthy_servers: RwLock<HashSet<String>>,
@@ -43,38 +44,66 @@ impl EccRpcService {
     recover: bool,
   ) -> Result<EccRpcService, StdError> {
     let client = EccClient::new().await;
+    let state = if !recover {
+      State::Ready
+    } else {
+      State::NotReady
+    };
     let res = EccRpcService {
       id,
       servers,
       healthy_servers: Default::default(),
-      state: if !recover { State::Ready } else { State::Ready },
+      state: RwLock::new(state),
       storage: Default::default(),
       lock_table: Default::default(),
       client: RwLock::new(client),
     };
-
-    // if recover {
-    //   res.recover().await?;
-    // }
-
     Ok(res)
+  }
+
+  async fn get_state(&self) -> State {
+    let state = self.state.read().await;
+    state.clone()
+  }
+  async fn set_state(&self, newState: State) {
+    let mut state = self.state.write().await;
+    *state = newState;
   }
 
   async fn recover(&self) -> Result<(), StdError> {
     // TODO: Probably want to recover while no transacations are in flight
     println!("RECOVER for {:?}", self.id);
-    let target = (self.id + 1) % self.servers.len();
     let client = self.client.write().await;
 
     // Get all keys to fill
-    let keys = client.get_keys_once(self.servers[target].clone()).await?;
+    let servers_len = self.servers.len();
+    let mut target = (self.id + 1) % servers_len;
+    let mut found_keys = false;
 
-    // Get all values
-    let mut storage = self.storage.write().await;
-    for key in keys {
-      let codeword = client.get_codeword(key.clone()).await?.unwrap();
-      let parity = serde_json::to_string(&codeword[self.id]).unwrap();
-      storage.insert(key, parity);
+    while !found_keys {
+      let keys_option = client.get_keys_once(self.servers[target].clone()).await?;
+      match keys_option {
+        Some(keys) => {
+          // Get all values
+          let mut storage = self.storage.write().await;
+          for key in keys {
+            let codeword = client.get_codeword(key.clone()).await?.unwrap();
+            let parity = serde_json::to_string(&codeword[self.id]).unwrap();
+            storage.insert(key, parity);
+          }
+
+          // All is good
+          found_keys = true;
+          self.set_state(State::Ready).await;
+        }
+        None => {
+          // Keep looking
+          target = (target + 1) % servers_len;
+          if target == self.id {
+            target = (target + 1) % servers_len;
+          }
+        }
+      }
     }
     Ok(())
   }
@@ -112,18 +141,26 @@ impl EccRpc for Arc<EccRpcService> {
   }
 
   async fn get_keys(&self, _: Request<GetKeysRequest>) -> Result<Response<GetKeysReply>, Status> {
-    let storage = self.storage.read().await;
-    let keys = storage.keys().cloned().collect::<Vec<String>>();
-    let keys = serde_json::to_string(&keys).unwrap();
-    let reply = GetKeysReply { keys };
-    Ok(Response::new(reply))
+    // Only give keys if nothing in locktable
+    let lock_table = self.lock_table.read().await;
+
+    if lock_table.keys().len() == 0 {
+      let storage = self.storage.read().await;
+      let keys = storage.keys().cloned().collect::<Vec<String>>();
+      let keys = serde_json::to_string(&keys).unwrap();
+      let reply = GetKeysReply { keys: Some(keys) };
+      Ok(Response::new(reply))
+    } else {
+      let reply = GetKeysReply { keys: None };
+      Ok(Response::new(reply))
+    }
   }
 
   async fn heartbeat(
     &self,
     request: Request<HeartbeatRequest>,
   ) -> Result<Response<HeartbeatReply>, Status> {
-    let state = match self.state {
+    let state = match self.get_state().await {
       State::NotReady => "NotReady".to_string(),
       State::Ready => "Ready".to_string(),
     };
@@ -236,8 +273,15 @@ pub async fn start_server(
   handle.spawn(async move {
     loop {
       sleep(Duration::from_millis(heartbeat_timeout_ms as u64)).await;
-      service.get_cluster_status().await;
+      // let state;
+      let state = service.get_state().await;
+      if state == State::Ready {
+        service.get_cluster_status().await;
+      } else {
+        service.recover().await;
+      }
       println!("{:?}", service.healthy_servers.read().await);
+      println!("{:?}", service.lock_table.read().await);
     }
   });
 

@@ -166,20 +166,25 @@ impl EccClient {
     }
   }
 
-  pub async fn get_keys_once(&self, address: String) -> Result<Vec<String>, StdError> {
+  pub async fn get_keys_once(&self, address: String) -> Result<Option<Vec<String>>, StdError> {
     let client = self.get_client(address.clone()).await;
 
+    println!(" {:?} ", client);
     match client {
       Some(mut client) => {
         let request = Request::new(GetKeysRequest {});
-        let response = client.get_keys(request).await?;
-        let keys = response.into_inner().keys;
-        let keys: Vec<String> = serde_json::from_str(&keys).unwrap();
-        Ok(keys)
+        let response = client.get_keys(request).await?.into_inner();
+        let keys = response.keys;
+
+        match keys {
+          Some(keys) => {
+            let keys: Vec<String> = serde_json::from_str(&keys).unwrap();
+            Ok(Some(keys))
+          }
+          None => Ok(None),
+        }
       }
-      _ => {
-        bail!("Ignoring {:?} as client could not connect", address)
-      }
+      None => Ok(None),
     }
   }
 

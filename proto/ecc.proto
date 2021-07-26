@@ -52,5 +52,5 @@ message GetReply {
 message GetKeysRequest {
 }
 message GetKeysReply {
-  string keys = 1;
+  optional string keys = 1;
 }
