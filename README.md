@@ -22,11 +22,8 @@ Created two in memory key value stores, using two strategies:
 - check snapshotting logic
 
 ## Todo ecc
-- heartbeats
-- 2PC
-- restore (no in flight transactions? yep no in flight, only healthy node with empty WAL)
-- restore needs to crawl all neighboors
-- better client naming
+- better client naming and code reuse
+- 2PC may be buggy / testing
 - better timeout
 
 ## Week 1
@@ -71,7 +68,10 @@ Created two in memory key value stores, using two strategies:
         - get
           - k
 
-## Week 3 (TODO)
+## Week 3 
+- Heartbeats, 2PC , Better Restore
+- Raft start one / client improvements
+
 - Choose a testing framework, strategy that can monitor resources and time
 - 2PC + Restore 
 - Raft membership changes

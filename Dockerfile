@@ -5,7 +5,6 @@ COPY . .
 RUN cargo install --path .
 
 FROM debian:buster-slim
-EXPOSE 50051
-COPY --from=builder /usr/local/cargo/bin/distributed-cache-server /usr/local/bin/distributed-cache-server
-CMD ["distributed-cache-server"]
+COPY --from=builder /usr/local/cargo/bin/distributed_cache /usr/local/bin/distributed_cache
+ENTRYPOINT ["distributed_cache"]
 
