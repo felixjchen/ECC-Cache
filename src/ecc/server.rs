@@ -3,12 +3,13 @@ use crate::ecc::{get_ecc_settings, StdError};
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
 use ecc_proto::*;
 use futures::future::join_all;
+use simple_error::bail;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::runtime::Handle;
 use tokio::sync::RwLock;
 use tokio::time::{sleep, Duration};
-use tonic::{transport::Server, Request, Response, Status};
+use tonic::{transport::Server, Code, Request, Response, Status};
 
 pub mod ecc_proto {
   tonic::include_proto!("ecc_proto");
@@ -72,7 +73,16 @@ impl EccRpcService {
     let mut state = self.state.write().await;
     *state = newState;
   }
-
+  async fn assert_ready(&self) -> Result<(), Status> {
+    let state = self.get_state().await;
+    match state {
+      State::Ready => Ok(()),
+      State::NotReady => Err(Status::new(
+        Code::Unavailable,
+        format!(" {:?} is not ready ", self.id),
+      )),
+    }
+  }
   async fn drain(&self) {
     let mut storage = self.storage.write().await;
     storage.drain();
@@ -151,6 +161,8 @@ impl EccRpcService {
 #[tonic::async_trait]
 impl EccRpc for Arc<EccRpcService> {
   async fn get(&self, request: Request<GetRequest>) -> Result<Response<GetReply>, Status> {
+    self.assert_ready().await?;
+
     let request = request.into_inner();
     println!("Got a get request: {:?}", request.clone());
     let key = request.key;
@@ -164,6 +176,8 @@ impl EccRpc for Arc<EccRpcService> {
   }
 
   async fn get_keys(&self, _: Request<GetKeysRequest>) -> Result<Response<GetKeysReply>, Status> {
+    self.assert_ready().await?;
+
     // Only give keys if nothing in locktable
     let lock_table = self.lock_table.read().await;
 
@@ -183,6 +197,8 @@ impl EccRpc for Arc<EccRpcService> {
     &self,
     request: Request<HeartbeatRequest>,
   ) -> Result<Response<HeartbeatReply>, Status> {
+    self.assert_ready().await?;
+
     let state = match self.get_state().await {
       State::NotReady => "NotReady".to_string(),
       State::Ready => "Ready".to_string(),
@@ -194,6 +210,7 @@ impl EccRpc for Arc<EccRpcService> {
     &self,
     request: Request<PrepareRequest>,
   ) -> Result<Response<PrepareReply>, Status> {
+    self.assert_ready().await?;
     let request = request.into_inner();
     println!("Got a prepare request: {:?}", request.clone());
     let tid = request.tid;
@@ -232,6 +249,7 @@ impl EccRpc for Arc<EccRpcService> {
 
   // Commit transacation to storage
   async fn commit(&self, request: Request<CommitRequest>) -> Result<Response<CommitReply>, Status> {
+    self.assert_ready().await?;
     let request = request.into_inner();
     println!("Got a commit request: {:?}", request.clone());
     let tid = request.tid;
@@ -253,6 +271,7 @@ impl EccRpc for Arc<EccRpcService> {
 
   // Abort new transaction
   async fn abort(&self, request: Request<AbortRequest>) -> Result<Response<AbortReply>, Status> {
+    self.assert_ready().await?;
     let request = request.into_inner();
     println!("Got an abort request: {:?}", request.clone());
     let tid = request.tid;
