@@ -101,11 +101,6 @@ impl EccRpcService {
     let mut found_keys = false;
 
     while !found_keys {
-      println!(
-        "RECOVER for {:?} target {:?}",
-        self.id,
-        self.servers[target].clone()
-      );
       let keys_option = client.get_keys_once(self.servers[target].clone()).await?;
       match keys_option {
         Some(keys) => {
@@ -146,10 +141,6 @@ impl EccRpcService {
       > 0
     {
       if healthy_servers_new.len() < self.k {
-        println!(
-          "{:?} has too few peers and is now outdated, discarding everything",
-          self.id
-        );
         self.set_state(State::NotReady).await;
         self.drain().await;
       }
@@ -164,7 +155,6 @@ impl EccRpc for Arc<EccRpcService> {
     self.assert_ready().await?;
 
     let request = request.into_inner();
-    println!("Got a get request: {:?}", request.clone());
     let key = request.key;
 
     let storage = self.storage.read().await;
@@ -212,7 +202,6 @@ impl EccRpc for Arc<EccRpcService> {
   ) -> Result<Response<PrepareReply>, Status> {
     self.assert_ready().await?;
     let request = request.into_inner();
-    println!("Got a prepare request: {:?}", request.clone());
     let tid = request.tid;
     let value = request.value;
     let key = request.key;
@@ -251,7 +240,6 @@ impl EccRpc for Arc<EccRpcService> {
   async fn commit(&self, request: Request<CommitRequest>) -> Result<Response<CommitReply>, Status> {
     self.assert_ready().await?;
     let request = request.into_inner();
-    println!("Got a commit request: {:?}", request.clone());
     let tid = request.tid;
     let key = request.key;
 
@@ -273,7 +261,6 @@ impl EccRpc for Arc<EccRpcService> {
   async fn abort(&self, request: Request<AbortRequest>) -> Result<Response<AbortReply>, Status> {
     self.assert_ready().await?;
     let request = request.into_inner();
-    println!("Got an abort request: {:?}", request.clone());
     let tid = request.tid;
     let key = request.key;
 
@@ -303,7 +290,6 @@ pub async fn start_server(
 ) -> Result<(), StdError> {
   let addr = addr.parse().unwrap();
   let service = EccRpcService::new(id, servers, recover).await?;
-  println!("Starting ecc cache node at {:?}", addr);
 
   let service = Arc::new(service);
 
@@ -317,14 +303,11 @@ pub async fn start_server(
       sleep(Duration::from_millis(heartbeat_timeout_ms as u64)).await;
 
       let state = service.get_state().await;
-      println!("{:?}", state);
       if state == State::Ready {
         service.get_cluster_status().await;
       } else {
         service.recover().await;
       }
-      println!("{:?}", service.healthy_servers.read().await);
-      println!("{:?}", service.lock_table.read().await);
     }
   });
 
