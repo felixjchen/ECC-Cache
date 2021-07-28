@@ -31,7 +31,6 @@ pub struct EccClient {
   servers: Vec<String>,
   index_table: HashMap<String, usize>,
   client_table: RwLock<HashMap<String, Option<EccRpcClient<Channel>>>>,
-  ignore_docker_hostname: bool,
 }
 
 impl EccClient {
@@ -71,7 +70,6 @@ impl EccClient {
       client_table,
       index_table,
       servers,
-      ignore_docker_hostname,
     }
   }
 
@@ -82,16 +80,14 @@ impl EccClient {
       Some(client_option) => match client_option {
         Some(client) => Some(client.clone()),
         None => {
-          let mut address = match env::var_os("DOCKER_HOSTNAME") {
+          let address = match env::var_os("DOCKER_HOSTNAME") {
             Some(hostname) => format!(
               "http://{}",
               addr.replace("0.0.0.0", &hostname.into_string().unwrap())
             ),
             None => format!("http://{}", addr),
           };
-          if self.ignore_docker_hostname {
-            address = format!("http://{}", addr);
-          };
+          println!("{}", address);
 
           let client_option = EccRpcClient::connect(address).await;
           match client_option {
