@@ -22,13 +22,7 @@ impl RaftClient {
     let n = client_table.len() as u64;
 
     for (id, addr) in node_ids.iter().zip(addresses.iter()) {
-      let addr = match env::var_os("DOCKER_HOSTNAME") {
-        Some(hostname) => format!(
-          "http://{}",
-          addr.replace("0.0.0.0", &hostname.into_string().unwrap())
-        ),
-        None => format!("http://{}", addr),
-      };
+      let addr = format!("http://{}", addr);
 
       let client = RaftRpcClient::connect(addr.clone()).await;
       let client = match client {

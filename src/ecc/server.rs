@@ -46,7 +46,7 @@ impl EccRpcService {
     recover: bool,
   ) -> Result<EccRpcService, StdError> {
     let (k, n, heartbeat_timeout_ms, block_size, servers) = get_ecc_settings();
-    let client = EccClient::new().await;
+    let client = EccClient::new(false).await;
     let state = if !recover {
       State::Ready
     } else {

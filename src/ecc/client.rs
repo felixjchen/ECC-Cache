@@ -31,28 +31,29 @@ pub struct EccClient {
   servers: Vec<String>,
   index_table: HashMap<String, usize>,
   client_table: RwLock<HashMap<String, Option<EccRpcClient<Channel>>>>,
+  ignore_docker_hostname: bool,
 }
 
 impl EccClient {
-  pub async fn new() -> EccClient {
+  pub async fn new(ignore_docker_hostname: bool) -> EccClient {
     let (k, n, heartbeat_timeout_ms, block_size, servers) = get_ecc_settings();
     let mut client_table = HashMap::new();
     let mut index_table = HashMap::new();
     for (i, addr) in servers.clone().into_iter().enumerate() {
-      let address = match env::var_os("DOCKER_HOSTNAME") {
-        Some(hostname) => format!(
-          "http://{}",
-          addr.replace("0.0.0.0", &hostname.into_string().unwrap())
-        ),
-        None => format!("http://{}", addr),
-      };
+      // let address = match env::var_os("DOCKER_HOSTNAME") {
+      //   Some(hostname) => format!(
+      //     "http://{}",
+      //     addr.replace("0.0.0.0", &hostname.into_string().unwrap())
+      //   ),
+      //   None => format!("http://{}", addr),
+      // };
 
-      let client = EccRpcClient::connect(address).await;
-      let client = match client {
-        Ok(i) => Some(i),
-        _ => None,
-      };
-      client_table.insert(addr.clone(), client);
+      // let client = EccRpcClient::connect(address).await;
+      // let client = match client {
+      //   Ok(i) => Some(i),
+      //   _ => None,
+      // };
+      client_table.insert(addr.clone(), None);
       index_table.insert(addr, i);
     }
     let client_table = RwLock::new(client_table);
@@ -70,6 +71,7 @@ impl EccClient {
       client_table,
       index_table,
       servers,
+      ignore_docker_hostname,
     }
   }
 
@@ -80,12 +82,15 @@ impl EccClient {
       Some(client_option) => match client_option {
         Some(client) => Some(client.clone()),
         None => {
-          let address = match env::var_os("DOCKER_HOSTNAME") {
+          let mut address = match env::var_os("DOCKER_HOSTNAME") {
             Some(hostname) => format!(
               "http://{}",
               addr.replace("0.0.0.0", &hostname.into_string().unwrap())
             ),
             None => format!("http://{}", addr),
+          };
+          if self.ignore_docker_hostname {
+            address = format!("http://{}", addr);
           };
 
           let client_option = EccRpcClient::connect(address).await;
