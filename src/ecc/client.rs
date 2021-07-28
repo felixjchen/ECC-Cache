@@ -34,7 +34,7 @@ pub struct EccClient {
 }
 
 impl EccClient {
-  pub async fn new(ignore_docker_hostname: bool) -> EccClient {
+  pub async fn new() -> EccClient {
     let (k, n, heartbeat_timeout_ms, block_size, servers) = get_ecc_settings();
     let mut client_table = HashMap::new();
     let mut index_table = HashMap::new();
