@@ -21,7 +21,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .subcommand(
               SubCommand::with_name("startOne")
                 .about("Start a single node from config.json. Meant to test restoring nodes.")
-                .arg(Arg::with_name("address").help("a").required(true).index(1)),
+                .arg(Arg::with_name("address").help("a").required(true).index(1))
+                .arg(
+                  Arg::with_name("recover")
+                    .help("a")
+                    .required(false)
+                    .index(2)
+                    .default_value("no"),
+                ),
             ),
         )
         .subcommand(
@@ -86,8 +93,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       // Start one ECC server node during restore
       if let Some(matches) = matches.subcommand_matches("startOne") {
         let addr = matches.value_of("address").unwrap().to_string();
+        let recover = matches.value_of("recover").unwrap().to_string() == "recover";
         match servers.iter().position(|i| i.clone() == addr) {
-          Some(id) => start_server(id, addr, servers.clone(), heartbeat_timeout_ms)
+          Some(id) => start_server(id, addr, servers.clone(), heartbeat_timeout_ms, recover)
             .await
             .unwrap(),
           None => bail!("server address not found in config"),

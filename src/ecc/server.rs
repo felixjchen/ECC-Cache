@@ -40,10 +40,18 @@ pub struct EccRpcService {
 }
 
 impl EccRpcService {
-  pub async fn new(id: usize, servers: Vec<String>) -> Result<EccRpcService, StdError> {
+  pub async fn new(
+    id: usize,
+    servers: Vec<String>,
+    recover: bool,
+  ) -> Result<EccRpcService, StdError> {
     let (k, n, heartbeat_timeout_ms, block_size, servers) = get_ecc_settings();
     let client = EccClient::new().await;
-    let state = State::NotReady;
+    let state = if !recover {
+      State::Ready
+    } else {
+      State::NotReady
+    };
     let res = EccRpcService {
       id,
       k,
@@ -84,6 +92,7 @@ impl EccRpcService {
   }
 
   async fn recover(&self) -> Result<(), StdError> {
+    // TODO: Probably want to recover while no transacations are in flight
     let client = self.client.write().await;
 
     // Get all keys to fill
@@ -290,9 +299,10 @@ pub async fn start_server(
   addr: String,
   servers: Vec<String>,
   heartbeat_timeout_ms: usize,
+  recover: bool,
 ) -> Result<(), StdError> {
   let addr = addr.parse().unwrap();
-  let service = EccRpcService::new(id, servers).await?;
+  let service = EccRpcService::new(id, servers, recover).await?;
   println!("Starting ecc cache node at {:?}", addr);
 
   let service = Arc::new(service);
@@ -328,7 +338,7 @@ pub async fn start_many_servers(
 ) -> Result<(), StdError> {
   let mut futures = Vec::new();
   for (id, addr) in servers.clone().into_iter().enumerate() {
-    let future = start_server(id, addr, servers.clone(), heartbeat_timeout_ms);
+    let future = start_server(id, addr, servers.clone(), heartbeat_timeout_ms, false);
     futures.push(future);
   }
   join_all(futures).await;
