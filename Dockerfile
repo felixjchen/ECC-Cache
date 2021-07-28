@@ -2,8 +2,7 @@ FROM rust:1.53 as builder
 WORKDIR /usr/src/myapp
 RUN rustup component add rustfmt 
 COPY . .
-RUN cargo install cargo-quickinstall
-RUN cargo quickinstall --path .
+RUN cargo install --path .
 
 FROM debian:buster-slim
 COPY ecc_config.json .
