@@ -86,7 +86,7 @@ impl EccClient {
             ),
             None => format!("http://{}", addr),
           };
-          println!("{}", address);
+          
 
           let client_option = EccRpcClient::connect(address).await;
           match client_option {
@@ -114,7 +114,7 @@ impl EccClient {
         let request = Request::new(GetRequest { key: key.clone() });
         let response = client.get(request).await?;
         let value = response.into_inner().value;
-        println!("Get {:?} {:?} {:?}", address, key, value);
+        
         Ok((address, value))
       }
       _ => {
@@ -136,7 +136,7 @@ impl EccClient {
 
     // Empty codeword
     let mut codeword: Vec<Option<Vec<u8>>> = vec![None; self.n];
-    println!("{:?}", first_k);
+    
 
     // Fill in codeword
     let mut all_none = true;
@@ -147,7 +147,7 @@ impl EccClient {
           all_none = all_none && result.is_none();
           // Get server index
           let i = self.index_table.get(&addr).unwrap().clone();
-          println!("{:?}", result);
+          
           // String to vec of u8
           let result: Option<Vec<u8>> = result.map(|x| serde_json::from_str(&x).unwrap());
           codeword[i] = result;
@@ -241,7 +241,7 @@ impl EccClient {
 
   pub async fn two_phase_commit(&self, key: String, value: String) -> Result<(), StdError> {
     let tid = Uuid::new_v4().to_string();
-    println!("Beginning 2pc for {:?} {:?} {:?}", tid, key, value);
+    
     let mut bytes = value.into_bytes();
 
     // too long ...
@@ -269,7 +269,7 @@ impl EccClient {
         .map(|x| serde_json::to_string(&x).unwrap())
         .collect();
 
-      println!("Constructed codeword {:?}", codeword);
+      
 
       // Prepare, try to acquire H >= k locks, make sure the healthy server clique is agreed upon
       let mut futures = Vec::new();
@@ -279,7 +279,7 @@ impl EccClient {
       }
       let res = join_all(futures).await;
 
-      println!("Waited for locks {:?}", res);
+      
 
       // Clique matches and all locks acquired
       // Acquired >= k locks
@@ -307,7 +307,7 @@ impl EccClient {
       }
 
       let go_commit = clique && num_locks_acquired >= self.k && all_locks_acquired;
-      println!("Can commit {:?}", go_commit);
+      
 
       if go_commit {
         let mut futures = Vec::new();
@@ -316,7 +316,7 @@ impl EccClient {
           futures.push(future);
         }
         let res = join_all(futures).await;
-        println!("COMMITED {:?}", res);
+        
       } else {
         let mut futures = Vec::new();
         for addr in self.servers.clone() {
@@ -324,7 +324,7 @@ impl EccClient {
           futures.push(future);
         }
         let res = join_all(futures).await;
-        println!("ABORTED {:?}", res);
+        
       }
       Ok(())
     }
