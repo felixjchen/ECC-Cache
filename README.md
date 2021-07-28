@@ -71,6 +71,8 @@ Created two in memory key value stores, using two strategies:
 ## Week 3 
 - Heartbeats, 2PC , Better Restore
 - Raft start one / client improvements
+- Dockerize everything, docker-compose and compiling the project
+- Figured out cAdvisor for resource monitoring
 
 - Choose a testing framework, strategy that can monitor resources and time
 - 2PC + Restore 

@@ -1,26 +1,26 @@
 version: "3.9"  # optional since v1.27.0
 services:
-  ecc1:
+  raft1:
     ports:
       - "3000:3000"
     image: felixchen1998/distributed-cache-server:latest
-    command: ecc server startOne 0.0.0.0:3000
+    command: raft server startOne 0
     environment:
       DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
 
-  ecc2:
+  raft2:
     ports:
       - "3001:3001"
     image: felixchen1998/distributed-cache-server:latest
-    command: ecc server startOne 0.0.0.0:3001
+    command: raft server startOne 1
     environment:
       DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
 
-  ecc3:
+  raft3:
     ports:
       - "3002:3002"
     image: felixchen1998/distributed-cache-server:latest
-    command: ecc server startOne 0.0.0.0:3002
+    command: raft server startOne 2
     environment:
       DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
 

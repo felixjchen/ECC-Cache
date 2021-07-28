@@ -28,3 +28,11 @@ https://doc.rust-lang.org/std/str/fn.from_utf8.html
 
 ## Redis uses a map internally
 db.c => dbAdd => dictAdd...
+
+##
+docker run -e DOCKER_HOSTNAME=host.docker.internal felixchen1998/distributed-cache-server:latest ecc client set key2345 testfdasfdas
+
+docker run -e DOCKER_HOSTNAME=host.docker.internal felixchen1998/distributed-cache-server:latest raft client set key2345 testfdasfdas
+
+## Docker routing
+https://dev.to/natterstefan/docker-tip-how-to-get-host-s-ip-address-inside-a-docker-container-5anh
