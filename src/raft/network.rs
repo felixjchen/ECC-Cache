@@ -9,6 +9,7 @@ use async_raft::{NodeId, RaftNetwork};
 use raft_proto::raft_rpc_client::RaftRpcClient;
 use raft_proto::{AppendEntriesRpcRequest, InstallSnapshotRpcRequest, VoteRequestRpcRequest};
 use std::collections::HashMap;
+use std::env;
 use tokio::sync::RwLock;
 use tonic::transport::Channel;
 
@@ -50,7 +51,15 @@ impl TonicgRPCNetwork {
     // Need to create connection
     if !client_table.contains_key(&peer) {
       let address = self.get_route(peer).await.unwrap();
-      let address = format!("http://{}", address);
+
+      let address = match env::var_os("DOCKER_HOSTNAME") {
+        Some(hostname) => format!(
+          "http://{}",
+          address.replace("0.0.0.0", &hostname.into_string().unwrap())
+        ),
+        None => format!("http://{}", address),
+      };
+
       let client = RaftRpcClient::connect(address).await.unwrap();
       client_table.insert(peer, client);
     }

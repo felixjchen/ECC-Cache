@@ -8,6 +8,7 @@ use reed_solomon_erasure::galois_8::ReedSolomon;
 use simple_error::bail;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::env;
 use std::str;
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -38,7 +39,15 @@ impl EccClient {
     let mut client_table = HashMap::new();
     let mut index_table = HashMap::new();
     for (i, addr) in servers.clone().into_iter().enumerate() {
-      let client = EccRpcClient::connect(format!("http://{}", addr)).await;
+      let address = match env::var_os("DOCKER_HOSTNAME") {
+        Some(hostname) => format!(
+          "http://{}",
+          addr.replace("0.0.0.0", &hostname.into_string().unwrap())
+        ),
+        None => format!("http://{}", addr),
+      };
+
+      let client = EccRpcClient::connect(address).await;
       let client = match client {
         Ok(i) => Some(i),
         _ => None,
@@ -71,7 +80,15 @@ impl EccClient {
       Some(client_option) => match client_option {
         Some(client) => Some(client.clone()),
         None => {
-          let client_option = EccRpcClient::connect(format!("http://{}", addr.clone())).await;
+          let address = match env::var_os("DOCKER_HOSTNAME") {
+            Some(hostname) => format!(
+              "http://{}",
+              addr.replace("0.0.0.0", &hostname.into_string().unwrap())
+            ),
+            None => format!("http://{}", addr),
+          };
+
+          let client_option = EccRpcClient::connect(address).await;
           match client_option {
             Ok(client) => {
               client_table.insert(addr.clone(), Some(client.clone()));

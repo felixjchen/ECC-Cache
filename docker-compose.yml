@@ -1,0 +1,22 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  ecc1:
+    ports:
+      - "3000:3000"
+    image: felixchen1998/distributed-cache-server:latest
+    command: ecc server startOne 0.0.0.0:3000
+    DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
+
+  ecc2:
+    ports:
+      - "3001:3001"
+    image: felixchen1998/distributed-cache-server:latest
+    command: ecc server startOne 0.0.0.0:3001
+    DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
+
+  ecc3:
+    ports:
+      - "3002:3002"
+    image: felixchen1998/distributed-cache-server:latest
+    command: ecc server startOne 0.0.0.0:3002
+    DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
