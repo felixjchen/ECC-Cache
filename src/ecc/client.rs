@@ -59,7 +59,6 @@ impl EccClient {
     let message_size = k * block_size;
     let codeword_size = n * block_size;
     let ecc = ReedSolomon::new(k, n - k).unwrap();
-    println!("Maximum message size is {}", message_size);
     EccClient {
       k,
       n,
