@@ -23,3 +23,5 @@ services:
     command: ecc server startOne 0.0.0.0:3002
     environment:
       DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
+
+docker run -e DOCKER_HOSTNAME=host.docker.internal felixchen1998/distributed-cache-server:latest ecc client get key

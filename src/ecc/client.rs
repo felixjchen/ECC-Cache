@@ -270,6 +270,8 @@ impl EccClient {
         .map(|x| serde_json::to_string(&x).unwrap())
         .collect();
 
+      println!("Constructed codeword {:?}", codeword);
+
       // Prepare, try to acquire H >= k locks, make sure the healthy server clique is agreed upon
       let mut futures = Vec::new();
       for (i, addr) in self.servers.iter().enumerate() {
@@ -277,6 +279,8 @@ impl EccClient {
         futures.push(future)
       }
       let res = join_all(futures).await;
+
+      println!("Waited for locks {:?}", res);
 
       // Clique matches and all locks acquired
       // Acquired >= k locks
