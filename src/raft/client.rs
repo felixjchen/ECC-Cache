@@ -29,7 +29,7 @@ impl RaftClient {
         ),
         None => format!("http://{}", addr),
       };
-      
+      println!("{}", addr);
 
       let client = RaftRpcClient::connect(addr.clone()).await;
       let client = match client {
@@ -38,6 +38,7 @@ impl RaftClient {
       };
       client_table.insert(id.clone(), client);
     }
+    // println!("{:?} {:?}", client_table, routing_table);
 
     RaftClient {
       client_table,
@@ -69,7 +70,7 @@ impl RaftClient {
           let response = response.into_inner();
 
           // Check if leader has changed, if not we're good!
-          
+          println!("{:?}", response);
           match response.leader_id {
             Some(new_leader) => {
               self.last_leader = new_leader;
@@ -107,7 +108,7 @@ impl RaftClient {
           let response = response.into_inner();
 
           // Check if leader has changed, if not we're good!
-          
+          println!("{:?}", response);
           match response.leader_id {
             Some(new_leader) => {
               self.last_leader = new_leader;

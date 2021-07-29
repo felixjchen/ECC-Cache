@@ -346,7 +346,7 @@ impl RaftStorage<ClientRequest, ClientResponse> for MemStore {
       "decoding snapshot for installation"
     );
     let raw = serde_json::to_string_pretty(snapshot.get_ref().as_slice())?;
-    
+    println!("JSON SNAP:\n{}", raw);
     let new_snapshot: MemStoreSnapshot = serde_json::from_slice(snapshot.get_ref().as_slice())?;
     // Update log.
     {
