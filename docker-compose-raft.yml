@@ -2,7 +2,7 @@ version: "3.9"  # optional since v1.27.0
 services:
   raft1:
     ports:
-      - "3000:3000"
+      - "4000:4000"
     image: felixchen1998/distributed-cache-server:latest
     command: raft server startOne 0
     environment:
@@ -10,7 +10,7 @@ services:
 
   raft2:
     ports:
-      - "3001:3001"
+      - "4001:4001"
     image: felixchen1998/distributed-cache-server:latest
     command: raft server startOne 1
     environment:
@@ -18,7 +18,7 @@ services:
 
   raft3:
     ports:
-      - "3002:3002"
+      - "4002:4002"
     image: felixchen1998/distributed-cache-server:latest
     command: raft server startOne 2
     environment:
