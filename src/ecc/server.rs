@@ -3,7 +3,6 @@ use crate::ecc::{get_ecc_settings, StdError};
 use ecc_proto::ecc_rpc_server::{EccRpc, EccRpcServer};
 use ecc_proto::*;
 use futures::future::join_all;
-use simple_error::bail;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::runtime::Handle;
@@ -69,9 +68,9 @@ impl EccRpcService {
     let state = self.state.read().await;
     state.clone()
   }
-  async fn set_state(&self, newState: State) {
+  async fn set_state(&self, new_state: State) {
     let mut state = self.state.write().await;
-    *state = newState;
+    *state = new_state;
   }
   async fn assert_ready(&self) -> Result<(), Status> {
     let state = self.get_state().await;
@@ -83,16 +82,15 @@ impl EccRpcService {
       )),
     }
   }
+  // Delete all entries and lock_table, to be called when out of date
   async fn drain(&self) {
     let mut storage = self.storage.write().await;
     storage.drain();
-
     let mut lock_table = self.lock_table.write().await;
     lock_table.drain();
   }
 
   async fn recover(&self) -> Result<(), StdError> {
-    // TODO: Probably want to recover while no transacations are in flight
     let client = self.client.write().await;
 
     // Get all keys to fill

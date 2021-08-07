@@ -1,7 +1,7 @@
 use crate::raft::network;
 use crate::raft::server;
 use crate::raft::storage;
-use async_raft::config::Config;
+use async_raft::config::{Config};
 use async_raft::{NodeId, Raft};
 use futures::future::join_all;
 use std::collections::{HashMap, HashSet};

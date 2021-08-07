@@ -73,6 +73,14 @@ Created two in memory key value stores, using two strategies:
 - Raft start one / client improvements
 - Dockerize everything, docker-compose and compiling the project
 - Figured out cAdvisor for resource monitoring
+- Tried netstat for resource monitoring
+- Wrote benchmarking tool
+
+## Week 4 TODO
+- Report
+- Benchmarking workload b
+- Benchmarking maybe on a fresh VM on digital ocean ? 
+- I have 4x technical interviews this coming week...
 
 - Choose a testing framework, strategy that can monitor resources and time
 - 2PC + Restore 
