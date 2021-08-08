@@ -76,13 +76,13 @@ Created two in memory key value stores, using two strategies:
 - Tried netstat for resource monitoring
 - Wrote benchmarking tool
 
-## Week 4 TODO
+## Week 4
 - Report
 - Benchmarking workload b
-- Benchmarking maybe on a fresh VM on digital ocean ? 
-- I have 4x technical interviews this coming week...
-
-- Choose a testing framework, strategy that can monitor resources and time
 - 2PC + Restore 
 - Raft membership changes
 - Report 
+- Benchmarking maybe on a fresh VM on digital ocean ?
+
+## Future works
+- Better error handling with dead servers

@@ -6,7 +6,7 @@ services:
     image: felixchen1998/distributed-cache-server:latest
     command: ecc server startOne 0.0.0.0:3000
     environment:
-      DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
+      DOCKER_HOSTNAME: host.docker.internal
 
   ecc2:
     ports:
@@ -14,7 +14,7 @@ services:
     image: felixchen1998/distributed-cache-server:latest
     command: ecc server startOne 0.0.0.0:3001
     environment:
-      DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
+      DOCKER_HOSTNAME: host.docker.internal
 
   ecc3:
     ports:
@@ -22,6 +22,5 @@ services:
     image: felixchen1998/distributed-cache-server:latest
     command: ecc server startOne 0.0.0.0:3002
     environment:
-      DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
+      DOCKER_HOSTNAME: host.docker.internal
 
-# docker run -p 3002:3002 -e DOCKER_HOSTNAME=${DOCKER_GATEWAY_HOST:-host.docker.internal} --name ecc_replacement felixchen1998/distributed-cache-server:latest ecc server startOne 0.0.0.0:3002 recover
