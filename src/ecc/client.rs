@@ -105,25 +105,27 @@ impl EccClient {
         Ok((address, value))
       }
       _ => {
-        sleep(Duration::from_secs(2)).await;
+        sleep(Duration::from_secs(5)).await;
         bail!("Ignoring {:?} as client could not connect", address)
       }
     }
   }
 
-  pub async fn get_codeword(&self, key: String) -> Result<Option<Vec<Vec<u8>>>, StdError> {
+  pub async fn get_codeword(&self, key: String, exclude_servers:HashSet<String>) -> Result<Option<Vec<Vec<u8>>>, StdError> {
     // Get first k responses
     let mut futures = Vec::new();
     for addr in self.servers.clone() {
-      let future = self.get_once(addr.clone(), key.clone());
-      futures.push(future);
+      if !exclude_servers.contains(&addr) {
+        let future = self.get_once(addr.clone(), key.clone());
+        futures.push(future);
+      }
     }
     let futures = futures.into_iter().collect::<FuturesUnordered<_>>();
     let first_k = futures.take(self.k).collect::<Vec<_>>().await;
 
     // Empty codeword
     let mut codeword: Vec<Option<Vec<u8>>> = vec![None; self.n];
-    println!("{:?}", first_k);
+    println!("First k {:?}", first_k);
 
     // Fill in codeword
     let mut all_none = true;
@@ -134,7 +136,7 @@ impl EccClient {
           all_none = all_none && result.is_none();
           // Get server index
           let i = self.index_table.get(&addr).unwrap().clone();
-          println!("{:?}", result);
+          println!("Response {:?}", result);
           // String to vec of u8
           let result: Option<Vec<u8>> = result.map(|x| serde_json::from_str(&x).unwrap());
           codeword[i] = result;
@@ -154,7 +156,7 @@ impl EccClient {
   }
 
   pub async fn get(&self, key: String) -> Result<Option<String>, StdError> {
-    match self.get_codeword(key).await? {
+    match self.get_codeword(key, HashSet::new()).await? {
       Some(codeword) => {
         // Process into string
         let flattened: Vec<u8> = codeword.into_iter().flatten().collect();
@@ -172,7 +174,6 @@ impl EccClient {
 
   pub async fn get_keys_once(&self, address: String) -> Result<Option<Vec<String>>, StdError> {
     let client = self.get_client(address.clone()).await;
-
     match client {
       Some(mut client) => {
         let request = Request::new(GetKeysRequest {});

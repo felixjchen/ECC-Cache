@@ -78,7 +78,7 @@ impl EccRpcService {
       State::Ready => Ok(()),
       State::NotReady => Err(Status::new(
         Code::Unavailable,
-        format!("{:?} is not ready ", self.id),
+        format!("{:?} is not ready", self.id),
       )),
     }
   }
@@ -113,8 +113,10 @@ impl EccRpcService {
           );
           // Get all values
           let mut storage = self.storage.write().await;
+          let mut exclude_servers = HashSet::new();
+          exclude_servers.insert(self.servers[self.id].clone());
           for key in keys {
-            let codeword = client.get_codeword(key.clone()).await?.unwrap();
+            let codeword = client.get_codeword(key.clone(), exclude_servers.clone()).await?.unwrap();
             let parity = serde_json::to_string(&codeword[self.id]).unwrap();
             storage.insert(key, parity);
           }
