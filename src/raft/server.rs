@@ -40,8 +40,6 @@ impl RaftRpc for RaftRpcService {
     let deserialized: AppendEntriesRequest<ClientRequest> =
       serde_json::from_str(&serialized).unwrap();
 
-    let entries = deserialized.entries.clone();
-
     println!("Got a append_entries request: {:?}", deserialized);
 
     let response = self.raft.append_entries(deserialized).await.unwrap();

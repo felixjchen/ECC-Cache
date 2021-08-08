@@ -199,7 +199,6 @@ impl EccRpc for Arc<EccRpcService> {
     &self,
     request: Request<HeartbeatRequest>,
   ) -> Result<Response<HeartbeatReply>, Status> {
-    self.assert_ready().await?;
 
     let state = match self.get_state().await {
       State::NotReady => "NotReady".to_string(),
