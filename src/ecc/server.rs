@@ -78,7 +78,7 @@ impl EccRpcService {
       State::Ready => Ok(()),
       State::NotReady => Err(Status::new(
         Code::Unavailable,
-        format!(" {:?} is not ready ", self.id),
+        format!("{:?} is not ready ", self.id),
       )),
     }
   }
@@ -105,8 +105,12 @@ impl EccRpcService {
         self.servers[target].clone()
       );
       let keys_option = client.get_keys_once(self.servers[target].clone()).await?;
+      
       match keys_option {
         Some(keys) => {
+          println!(
+            "RECOVER got keys {:?}",keys
+          );
           // Get all values
           let mut storage = self.storage.write().await;
           for key in keys {

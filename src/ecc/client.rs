@@ -39,19 +39,6 @@ impl EccClient {
     let mut client_table = HashMap::new();
     let mut index_table = HashMap::new();
     for (i, addr) in servers.clone().into_iter().enumerate() {
-      // let address = match env::var_os("DOCKER_HOSTNAME") {
-      //   Some(hostname) => format!(
-      //     "http://{}",
-      //     addr.replace("0.0.0.0", &hostname.into_string().unwrap())
-      //   ),
-      //   None => format!("http://{}", addr),
-      // };
-
-      // let client = EccRpcClient::connect(address).await;
-      // let client = match client {
-      //   Ok(i) => Some(i),
-      //   _ => None,
-      // };
       client_table.insert(addr.clone(), None);
       index_table.insert(addr, i);
     }

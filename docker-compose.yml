@@ -24,3 +24,4 @@ services:
     environment:
       DOCKER_HOSTNAME: ${DOCKER_GATEWAY_HOST:-host.docker.internal}
 
+# docker run -p 3002:3002 -e DOCKER_HOSTNAME=${DOCKER_GATEWAY_HOST:-host.docker.internal} felixchen1998/distributed-cache-server:latest ecc server startOne 0.0.0.0:3002 recover
