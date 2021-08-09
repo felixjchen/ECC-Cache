@@ -138,9 +138,13 @@ impl EccRpcService {
   }
 
   async fn get_cluster_status(&self) {
+    println!("{:?} ", 10);
     let mut client = self.client.write().await;
+    println!("{:?} ", 20);
     let healthy_servers_new = client.send_heartbeats().await;
+    println!("{:?} ", 30);
     let mut healthy_servers = self.healthy_servers.write().await;
+    println!("{:?} ", 40);
 
     // Only if healthy servers changed
     println!("HEARTBEAT {:?} {:?} ", healthy_servers, healthy_servers_new);
@@ -323,12 +327,6 @@ pub async fn start_server(
         service.recover().await;
         println!("{:?}", 4);
       }
-    }
-  });
-  handle.spawn(async {
-    loop {
-      sleep(Duration::from_millis(2000)).await;
-      println!("test");
     }
   });
 
