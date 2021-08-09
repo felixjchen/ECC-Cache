@@ -223,12 +223,14 @@ impl RaftStorage<ClientRequest, ClientResponse> for MemStore {
   async fn append_entry_to_log(&self, entry: &Entry<ClientRequest>) -> Result<()> {
     let mut log = self.log.write().await;
     log.insert(entry.index, entry.clone());
+    println!("Appending to log: {:?}", entry.clone());
     Ok(())
   }
 
   #[tracing::instrument(level = "trace", skip(self, entries))]
   async fn replicate_to_log(&self, entries: &[Entry<ClientRequest>]) -> Result<()> {
     let mut log = self.log.write().await;
+    println!("Replicating to log: {:?}", entries.clone());
     for entry in entries {
       log.insert(entry.index, entry.clone());
     }
