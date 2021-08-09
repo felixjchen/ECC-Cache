@@ -315,14 +315,19 @@ pub async fn start_server(
       let state = service.get_state().await;
       println!("{:?}", state);
       if state == State::Ready {
+        println!("{:?}", 1);
         service.get_cluster_status().await;
+        println!("{:?}", 2);
       } else {
+        println!("{:?}", 3);
         service.recover().await;
+        println!("{:?}", 4);
       }
     }
   });
   handle.spawn(async {
     loop {
+      sleep(Duration::from_millis(2000)).await;
       println!("test");
     }
   });
