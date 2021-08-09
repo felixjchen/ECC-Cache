@@ -73,7 +73,6 @@ impl EccClient {
             ),
             None => format!("http://{}", addr),
           };
-          println!("{}", address);
 
           let client_option = EccRpcClient::connect(address).await;
           match client_option {
@@ -111,7 +110,11 @@ impl EccClient {
     }
   }
 
-  pub async fn get_codeword(&self, key: String, exclude_servers:HashSet<String>) -> Result<Option<Vec<Vec<u8>>>, StdError> {
+  pub async fn get_codeword(
+    &self,
+    key: String,
+    exclude_servers: HashSet<String>,
+  ) -> Result<Option<Vec<Vec<u8>>>, StdError> {
     // Get first k responses
     let mut futures = Vec::new();
     for addr in self.servers.clone() {
