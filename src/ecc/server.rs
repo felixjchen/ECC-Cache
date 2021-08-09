@@ -144,22 +144,15 @@ impl EccRpcService {
 
     // Only if healthy servers changed
     println!("HEARTBEAT {:?} {:?} ", healthy_servers, healthy_servers_new);
-    if healthy_servers
-      .symmetric_difference(&healthy_servers_new)
-      .into_iter()
-      .count()
-      > 0
-    {
-      if healthy_servers_new.len() < self.k {
-        println!(
-          "{:?} has too few peers and is now outdated, discarding everything",
-          self.id
-        );
-        self.set_state(State::NotReady).await;
-        self.drain().await;
-      }
-      *healthy_servers = healthy_servers_new;
+    if healthy_servers_new.len() < self.k {
+      println!(
+        "{:?} has too few peers and is now outdated, discarding everything",
+        self.id
+      );
+      self.set_state(State::NotReady).await;
+      self.drain().await;
     }
+    *healthy_servers = healthy_servers_new;
   }
 }
 
