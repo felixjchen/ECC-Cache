@@ -105,18 +105,18 @@ impl EccRpcService {
         self.servers[target].clone()
       );
       let keys_option = client.get_keys_once(self.servers[target].clone()).await?;
-      
       match keys_option {
         Some(keys) => {
-          println!(
-            "RECOVER got keys {:?}",keys
-          );
+          println!("RECOVER got keys {:?}", keys);
           // Get all values
           let mut storage = self.storage.write().await;
           let mut exclude_servers = HashSet::new();
           exclude_servers.insert(self.servers[self.id].clone());
           for key in keys {
-            let codeword = client.get_codeword(key.clone(), exclude_servers.clone()).await?.unwrap();
+            let codeword = client
+              .get_codeword(key.clone(), exclude_servers.clone())
+              .await?
+              .unwrap();
             let parity = serde_json::to_string(&codeword[self.id]).unwrap();
             storage.insert(key, parity);
           }
@@ -143,6 +143,7 @@ impl EccRpcService {
     let mut healthy_servers = self.healthy_servers.write().await;
 
     // Only if healthy servers changed
+    println!("HEARTBEAT {:?} {:?} ", healthy_servers, healthy_servers_new);
     if healthy_servers
       .symmetric_difference(&healthy_servers_new)
       .into_iter()
@@ -201,7 +202,6 @@ impl EccRpc for Arc<EccRpcService> {
     &self,
     request: Request<HeartbeatRequest>,
   ) -> Result<Response<HeartbeatReply>, Status> {
-
     let state = match self.get_state().await {
       State::NotReady => "NotReady".to_string(),
       State::Ready => "Ready".to_string(),

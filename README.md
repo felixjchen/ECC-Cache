@@ -20,11 +20,13 @@ Created two in memory key value stores, using two strategies:
 ## Todo raft
 - Storage hard state
 - check snapshotting logic
+- Handling getting from dead servers
 
 ## Todo ecc
 - better client naming and code reuse
 - 2PC may be buggy / testing
 - better timeout
+- Handling getting from dead servers
 
 ## Week 1
 - sketched outline for ECC cache
@@ -83,6 +85,3 @@ Created two in memory key value stores, using two strategies:
 - Raft membership changes
 - Report 
 - Benchmarking maybe on a fresh VM on digital ocean ?
-
-## Future works
-- Better error handling with dead servers
