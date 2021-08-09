@@ -321,6 +321,11 @@ pub async fn start_server(
       }
     }
   });
+  handle.spawn(async {
+    loop {
+      println!("test");
+    }
+  });
 
   server_future.await?;
   Ok(())
