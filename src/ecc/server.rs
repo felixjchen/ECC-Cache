@@ -319,8 +319,6 @@ pub async fn start_server(
       } else {
         service.recover().await;
       }
-      println!("{:?}", service.healthy_servers.read().await);
-      println!("{:?}", service.lock_table.read().await);
     }
   });
 
