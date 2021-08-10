@@ -25,7 +25,7 @@ Created two in memory key value stores, using two strategies:
 ## Todo ecc
 - better client naming and code reuse
 - 2PC may be buggy / testing
-- better timeout
+- better timeout https://tokio-rs.github.io/tokio/doc/tokio/time/fn.timeout.html
 - Handling getting from dead servers
 
 ## Week 1

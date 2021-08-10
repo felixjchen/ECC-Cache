@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::runtime::Handle;
 use tokio::sync::RwLock;
-use tokio::time::{sleep, Duration};
+use tokio::time::{sleep, timeout, Duration};
 use tonic::{transport::Server, Code, Request, Response, Status};
 
 pub mod ecc_proto {
@@ -138,13 +138,13 @@ impl EccRpcService {
   }
 
   async fn get_cluster_status(&self) {
-    println!("{:?} ", 10);
     let mut client = self.client.write().await;
-    println!("{:?} ", 20);
-    let healthy_servers_new = client.send_heartbeats().await;
-    println!("{:?} ", 30);
+    let healthy_servers_new =
+      match timeout(Duration::from_millis(1000), client.send_heartbeats()).await {
+        Err(_) => Default::default(),
+        Ok(res) => res,
+      };
     let mut healthy_servers = self.healthy_servers.write().await;
-    println!("{:?} ", 40);
 
     // Only if healthy servers changed
     println!("HEARTBEAT {:?} {:?} ", healthy_servers, healthy_servers_new);
@@ -319,13 +319,9 @@ pub async fn start_server(
       let state = service.get_state().await;
       println!("{:?}", state);
       if state == State::Ready {
-        println!("{:?}", 1);
         service.get_cluster_status().await;
-        println!("{:?}", 2);
       } else {
-        println!("{:?}", 3);
         service.recover().await;
-        println!("{:?}", 4);
       }
     }
   });
