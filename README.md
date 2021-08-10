@@ -85,3 +85,4 @@ Created two in memory key value stores, using two strategies:
 - Raft membership changes
 - Report 
 - Benchmarking maybe on a fresh VM on digital ocean ?
+- trying to get benchmark with errors
