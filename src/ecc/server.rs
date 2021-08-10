@@ -104,7 +104,17 @@ impl EccRpcService {
         self.id,
         self.servers[target].clone()
       );
-      let keys_option = client.get_keys_once(self.servers[target].clone()).await?;
+      // let keys_option = client.get_keys_once(self.servers[target].clone()).await?;
+      let keys_option = match timeout(
+        Duration::from_millis(1000),
+        client.get_keys_once(self.servers[target].clone()),
+      )
+      .await
+      {
+        Ok(Ok(keys)) => keys,
+        _ => None,
+      };
+
       match keys_option {
         Some(keys) => {
           println!("RECOVER got keys {:?}", keys);
