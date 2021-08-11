@@ -17,24 +17,24 @@ const raft_prefix = "distributed_cache raft client"
 const records = 10000
 
 func get_stop_raft_node_command() []string {
-	return strings.Split("docker kill d94_raft3_1", " ")
+	return strings.Split("docker kill benchmarks_raft3_1", " ")
 }
 func get_start_raft_node_command() []string {
-	return strings.Split("docker run -d -p 4002:4002 -e DOCKER_HOSTNAME=host.docker.internal --name d94_raft3_replacement_1 felixchen1998/distributed-cache-server:latest raft server startOne 2", " ")
+	return strings.Split("docker run -d -p 4002:4002 -e DOCKER_HOSTNAME=host.docker.internal --name benchmarks_raft3_replacement_1 felixchen1998/distributed-cache-server:latest raft server startOne 2", " ")
 }
 
 func get_stop_ecc_node_command() []string {
-	return strings.Split("docker kill d94_ecc3_1", " ")
+	return strings.Split("docker kill benchmarks_ecc3_1", " ")
 }
 func get_start_ecc_node_command() []string {
-	return strings.Split("docker run -d -p 3002:3002 -e DOCKER_HOSTNAME=host.docker.internal --name d94_ecc3_replacement_1 felixchen1998/distributed-cache-server:latest ecc server startOne 0.0.0.0:3002 recover", " ")
+	return strings.Split("docker run -d -p 3002:3002 -e DOCKER_HOSTNAME=host.docker.internal --name benchmarks_ecc3_replacement_1 felixchen1998/distributed-cache-server:latest ecc server startOne 0.0.0.0:3002 recover", " ")
 }
 
 func get_disconnect_ecc_node_command() []string {
-	return strings.Split("docker network disconnect d94_default d94_ecc3_1", " ")
+	return strings.Split("docker network disconnect benchmarks_default benchmarks_ecc3_1", " ")
 }
 func get_connect_ecc_node_command() []string {
-	return strings.Split("docker network connect d94_default d94_ecc3_1", " ")
+	return strings.Split("docker network connect benchmarks_default benchmarks_ecc3_1", " ")
 }
 
 func get_set_command(key_number int) string {
