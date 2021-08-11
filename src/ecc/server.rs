@@ -176,7 +176,7 @@ impl EccRpc for Arc<EccRpcService> {
     self.assert_ready().await?;
 
     let request = request.into_inner();
-    println!("Got a get request: {:?}", request.clone());
+    // println!("Got a get request: {:?}", request.clone());
     let key = request.key;
 
     let storage = self.storage.read().await;
@@ -222,7 +222,7 @@ impl EccRpc for Arc<EccRpcService> {
   ) -> Result<Response<PrepareReply>, Status> {
     self.assert_ready().await?;
     let request = request.into_inner();
-    println!("Got a prepare request: {:?}", request.clone());
+    // println!("Got a prepare request: {:?}", request.clone());
     let tid = request.tid;
     let value = request.value;
     let key = request.key;
@@ -261,7 +261,7 @@ impl EccRpc for Arc<EccRpcService> {
   async fn commit(&self, request: Request<CommitRequest>) -> Result<Response<CommitReply>, Status> {
     self.assert_ready().await?;
     let request = request.into_inner();
-    println!("Got a commit request: {:?}", request.clone());
+    // println!("Got a commit request: {:?}", request.clone());
     let tid = request.tid;
     let key = request.key;
 

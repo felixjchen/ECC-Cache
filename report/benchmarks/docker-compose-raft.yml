@@ -1,0 +1,30 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  raft1:
+    ports:
+      - "4000:4000"
+    image: felixchen1998/distributed-cache-server:latest
+    command: raft server startOne 0
+    environment:
+      DOCKER_HOSTNAME: host.docker.internal
+
+  raft2:
+    ports:
+      - "4001:4001"
+    image: felixchen1998/distributed-cache-server:latest
+    command: raft server startOne 1
+    environment:
+      DOCKER_HOSTNAME: host.docker.internal
+
+  # Raft3 should be a follower
+  raft3:
+    ports:
+      - "4002:4002"
+    image: felixchen1998/distributed-cache-server:latest
+    command: raft server startOne 2
+    environment:
+      DOCKER_HOSTNAME: host.docker.internal
+    depends_on:
+      - raft1 
+      - raft2
+
