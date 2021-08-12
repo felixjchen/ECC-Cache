@@ -13,13 +13,10 @@ Created two in memory key value stores, using two strategies:
 ## Todo overall
 - error handling 
 - integration tests
-- benchmarking
-- different configjsons
 - cleanup logging
 
 ## Todo raft
 - Storage hard state
-- check snapshotting logic
 - Handling getting from dead servers
 
 ## Todo ecc
