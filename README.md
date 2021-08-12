@@ -4,6 +4,8 @@
 
 📊 [Benchmarks](https://github.com/felixjchen/Distributed-Cache/tree/main/report/benchmarks)
 
+🎓 [Course / Studies](https://github.com/felixjchen/D94/blob/main/README.md)
+
 ## Motivation
 Reduce redundancy in distributed caching by avoiding data replication and using error correction codes. 
 
@@ -14,7 +16,7 @@ Created two distributed key value stores, using two strategies:
 1. Raft replication
 2. Error Correcting Codes (Reed Solomon)
 
-### ECC cache uses 3.4 MiB
+### ECC cache uses 3.5 MiB
 ![](https://user-images.githubusercontent.com/31393977/129127326-b744db92-29ca-4881-8aee-98c308f8b958.png)
 ### Raft based cache uses 6.0 MiB
 ![](https://user-images.githubusercontent.com/31393977/129127327-3d3aedab-76d6-4240-8225-d92d7a13cc78.png)
