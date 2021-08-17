@@ -23,6 +23,19 @@ Created two distributed key value stores, using two strategies:
 ![](https://user-images.githubusercontent.com/31393977/129127327-3d3aedab-76d6-4240-8225-d92d7a13cc78.png)
 
 
+## Running From Source
+
+```
+git clone https://github.com/felixjchen/Distributed-ECC-Cache
+cd Distributed-ECC-Cache
+cargo build
+
+cargo run ecc server startAll
+cargo run ecc client set fruit cherry
+cargo run ecc client get fruit
+```
+- The command tree can be found in week 2 
+
 # Implementation
 
 ## Assumptions
